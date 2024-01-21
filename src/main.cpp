@@ -1,23 +1,29 @@
 #include <Arduino.h>
 #include <functional>
 #include <ArduinoLog.h>
-//#include <SoftwareSerial.h>
-//#include <ArduinoLowPower.h>
 
 #include "config.h"
 #include "Configuration.h"
 
 #if defined(ESP32)
+#elif defined(ESP8266)
+  #include <SoftwareSerial.h> 
+#elif defined(SEEED_XIAO_M0)
+  #include <ArduinoLowPower.h>
+#else
+  #error Unsupported platform
+#endif
+
+
+#if defined(ESP32)
   #define VE_RX GPIO_NUM_16
   #define VE_TX GPIO_NUM_17
 #elif defined(ESP8266)
-  #define VE_RX D7
-  #define VE_TX D8
+  #define VE_RX D3
+  #define VE_TX D4
 #elif defined(SEEED_XIAO_M0)
   #define VE_RX D7
   #define VE_TX D6
-#else
-  #error Unsupported platform
 #endif
 
 unsigned long tsMillisBooted;
@@ -50,6 +56,7 @@ void RecvWithEndMarker() {
     while (VEDirectStream->available() > 0 && new_data == false) {
         rc = VEDirectStream->read();
         Serial.write(rc);
+        /*
         if (rc != endMarker) {
             receivedChars[ndx] = rc;
             ndx++;
@@ -63,6 +70,7 @@ void RecvWithEndMarker() {
             new_data = true;
         }
         yield();
+        */
     }
 }
 
@@ -175,10 +183,14 @@ void setup() {
   tsMillisBooted = millis();
 
 #if defined(ESP32)
-  Serial2.begin(19200, SERIAL_8N1, VE_RX, VE_RX);
+  Serial2.begin(19200, SERIAL_8N1, VE_RX, VE_TX);
   VEDirectStream = &Serial2;
 #elif defined(ESP8266)
-  
+  pinMode(VE_RX, INPUT);
+  pinMode(VE_TX, OUTPUT);
+  SoftwareSerial *ves = new SoftwareSerial(VE_RX, VE_TX);
+  ves->begin(19200, SWSERIAL_8N1);
+  VEDirectStream = ves;
 #elif defined(SEEED_XIAO_M0)
   
 #endif
