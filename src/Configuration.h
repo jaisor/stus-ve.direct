@@ -43,7 +43,7 @@
 #endif
 
 //#define TEMP_SENSOR_DS18B20
-#define TEMP_SENSOR_BME280
+//#define TEMP_SENSOR_BME280
 //#define TEMP_SENSOR_DHT
 #ifdef TEMP_SENSOR_DHT
   #define TEMP_SENSOR_DHT_TYPE   DHT22

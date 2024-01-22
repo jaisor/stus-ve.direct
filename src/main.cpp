@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <functional>
 #include <ArduinoLog.h>
+#include <SPI.h>
 
 #include "config.h"
 #include "Configuration.h"
@@ -192,7 +193,8 @@ void setup() {
   ves->begin(19200, SWSERIAL_8N1);
   VEDirectStream = ves;
 #elif defined(SEEED_XIAO_M0)
-  
+  Serial1.begin(19200, SERIAL_8N1);
+  VEDirectStream = &Serial1;
 #endif
   
   delay(1000);
@@ -201,6 +203,9 @@ void setup() {
 }
 
 void loop() {
+
+  // TODO: Eventually use https://github.com/giacinti/VeDirectFrameHandler/blob/master/example/ReadVEDirectFramehandler.ino
+  // Protocol https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.33.pdf
 
   //Log.infoln("VE_SOC = %i", ved->read(VE_SOC));
   /*
