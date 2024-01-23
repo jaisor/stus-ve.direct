@@ -14,4 +14,5 @@ public:
 	CBaseMessage(const u_int8_t pipe);
     const uint8_t getPipe() { return pipe; };
     virtual const String getString() { return String(""); }
+    virtual const void* getMessageBuffer() = 0;
 };

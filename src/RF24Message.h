@@ -20,8 +20,11 @@ public:
   CRF24Message(const u_int8_t pipe, const void* buf, const uint8_t length);
 
   static uint8_t getMessageLength() { return sizeof(r24_message_uvthp_t); }
-  const void* getMessageBuffer(); 
-  const bool isError() { return error; }
+  
+  virtual const void* getMessageBuffer() { return &msg; } 
+  virtual const bool isError() { return error; }
+  virtual const String getString();
+  virtual const uint8_t getId() { return msg.id; }
 
   uint32_t getUptime();
   void setUptime(uint32_t value);
@@ -37,8 +40,5 @@ public:
 
   float getBaroPressure();
   void setBaroPressure(float value);
-
-  virtual const String getString();
-  virtual const uint8_t getId() { return msg.id; }
 
 };

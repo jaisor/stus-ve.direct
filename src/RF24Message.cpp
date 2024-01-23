@@ -35,10 +35,6 @@ CRF24Message::CRF24Message(const u_int8_t pipe, const void* buf, const uint8_t l
   }
 }
 
-const void* CRF24Message::getMessageBuffer() {
-  return &msg;
-}
-
 uint32_t CRF24Message::getUptime() {
   return msg.uptime;
 }
