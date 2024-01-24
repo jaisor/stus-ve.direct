@@ -39,12 +39,20 @@ CRF24Manager::CRF24Manager(ISensorProvider* sensor)
 
   uint8_t addr[6];
   memcpy(addr, RF24_ADDRESS, 6);
+
+  uint8_t maxMessageSize = sizeof(r24_message_uvthp_t);
+  if (sizeof(r24_message_ved_inv_t) > maxMessageSize) { maxMessageSize = sizeof(r24_message_ved_inv_t); }
+  if (sizeof(r24_message_ved_mppt_t) > maxMessageSize) { maxMessageSize = sizeof(r24_message_ved_mppt_t); }
+  Log.noticeln("sizeof(r24_message_uvthp_t): %u", sizeof(r24_message_uvthp_t));
+  Log.noticeln("sizeof(r24_message_ved_inv_t): %u", sizeof(r24_message_ved_inv_t));
+  Log.noticeln("sizeof(r24_message_ved_mppt_t): %u", sizeof(r24_message_ved_mppt_t));
+  Log.infoln("Max message size: %u", maxMessageSize);
   
   radio->setAddressWidth(5);
   radio->setDataRate(RF24_DATA_RATE);
   radio->setPALevel(RF24_PA_LEVEL);
   radio->setChannel(RF24_CHANNEL);
-  radio->setPayloadSize(CRF24Message::getMessageLength());
+  radio->setPayloadSize(maxMessageSize);
   radio->setRetries(15, 15);
   radio->setAutoAck(false);
   radio->openWritingPipe(addr);

@@ -4,9 +4,6 @@
 
 #include "RF24Message_VED_MPPT.h"
 
-// Message Uptime-Voltage-Temperature-Humidity-BarometricPressure
-#define MSG_VED_MPPT_ID 2
-
 CRF24Message_VED_MPPT::CRF24Message_VED_MPPT(const u_int8_t pipe, const r24_message_ved_mppt_t msg)
 : CBaseMessage(pipe) {  
   

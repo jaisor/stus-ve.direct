@@ -4,9 +4,6 @@
 
 #include "RF24Message.h"
 
-// Message Uptime-Voltage-Temperature-Humidity-BarometricPressure
-#define MSG_UVTHP_ID 1
-
 CRF24Message::CRF24Message(const u_int8_t pipe, const uint16_t uptime, const float voltage, const float temperature, const float humidity, const float baro_pressure)
 : CBaseMessage(pipe) {  
   

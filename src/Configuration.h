@@ -24,7 +24,7 @@
   #define RF24_CHANNEL 124
   #define RF24_DATA_RATE RF24_250KBPS
   #define RF24_PA_LEVEL RF24_PA_HIGH
-  #define RF24_ADDRESS "5STUS"
+  #define RF24_ADDRESS "3STUS"
 #endif
 
 #define BATTERY_SENSOR  // ADC A0 using 0-3.3v voltage divider
@@ -42,7 +42,7 @@
 
 #endif
 
-//#define TEMP_SENSOR_DS18B20
+#define TEMP_SENSOR_DS18B20
 //#define TEMP_SENSOR_BME280
 //#define TEMP_SENSOR_DHT
 #ifdef TEMP_SENSOR_DHT
@@ -59,10 +59,14 @@
   #define DEEP_SLEEP_DISABLE_PIN GPIO_NUM_1
   #define TEMP_SENSOR_PIN D3
 #elif SEEED_XIAO_M0
-  #define TEMP_SENSOR_PIN D4
+  #if defined(TEMP_SENSOR_DS18B20)
+    #define TEMP_SENSOR_PIN D0
+  #else
+    #define TEMP_SENSOR_PIN D4
+  #endif
 #endif
 
-#define DEEP_SLEEP_INTERVAL_SEC 300 // 5 min default, 0 - disabled
+#define DEEP_SLEEP_INTERVAL_SEC 0 // 300 // 5 min default, 0 - disabled
 #define DEEP_SLEEP_MIN_AWAKE_MS 250 // Minimum time to remain awake after smooth boot before sleeping again
 #define BATTERY_VOLTS_DIVIDER 217.55
 

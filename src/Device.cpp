@@ -14,6 +14,7 @@ CDevice::CDevice() {
 
   tLastReading = 0;
 #ifdef TEMP_SENSOR_DS18B20
+  pinMode(TEMP_SENSOR_PIN, INPUT);
   oneWire = new OneWire(TEMP_SENSOR_PIN);
   DeviceAddress da;
   _ds18b20 = new DS18B20(oneWire);
@@ -105,7 +106,7 @@ void CDevice::loop() {
         tLastReading = millis();
         Log.verboseln(F("DS18B20 temp: %FC %FF"), _temperature, _temperature*1.8+32);
       } else {
-        Log.verboseln(F("DS18B20 conversion not complete"));
+        //Log.verboseln(F("DS18B20 conversion not complete"));
       }
     #endif
     #ifdef TEMP_SENSOR_BME280

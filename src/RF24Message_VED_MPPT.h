@@ -2,24 +2,6 @@
 
 #include "BaseMessage.h"
 
-typedef struct r24_message_ved_mppt_t {
-  uint8_t id;             // message id
-  //
-  float b_voltage;        // V
-  float b_current;        // A - when > 0, the battery is being charged, < 0 the battery is being
-  float p_voltage;        // V
-  float p_power;          // W
-  u_int8_t current_state;
-  u_int8_t mppt;
-  u_int8_t off_reason;
-  u_int8_t error;
-  //
-  float today_yield;      // Wh
-  float today_max_power;  // Wh
-  //
-  float temperature;      // C
-} _r24_message_ved_mppt1_t;
-
 class CRF24Message_VED_MPPT: public CBaseMessage {
 private:
   r24_message_ved_mppt_t msg;
