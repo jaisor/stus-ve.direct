@@ -24,7 +24,7 @@
   #define RF24_CHANNEL 124
   #define RF24_DATA_RATE RF24_250KBPS
   #define RF24_PA_LEVEL RF24_PA_HIGH
-  #define RF24_ADDRESS "3STUS"
+  #define RF24_ADDRESS "4STUS"
 #endif
 
 //#define BATTERY_SENSOR  // ADC A0 using 0-3.3v voltage divider

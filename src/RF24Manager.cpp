@@ -95,10 +95,10 @@ void CRF24Manager::loop() {
   CRF24Message msg(
     0, 
     sensor->getUptime(),
-    sensor->getBatteryVoltage(NULL), // in V
-    sensor->getTemperature(NULL), // in C
-    sensor->getHumidity(NULL), // in %
-    sensor->getBaroPressure(NULL) // in Pascal
+    0, // sensor->getBatteryVoltage(NULL), // in V
+    0, //sensor->getTemperature(NULL), // in C
+    0, //sensor->getHumidity(NULL), // in %
+    0 //sensor->getBaroPressure(NULL) // in Pascal
   );
 
   if (Log.getLevel() >= LOG_LEVEL_VERBOSE) {

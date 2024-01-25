@@ -24,11 +24,12 @@
 #include "VEDirectManager.h"
 #include "Configuration.h"
 
-// TODO: Eventually use https://github.com/giacinti/VeDirectFrameHandler/blob/master/example/ReadVEDirectFramehandler.ino
+static constexpr char checksumTagName[] = "CHECKSUM";
+
 // Protocol https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.33.pdf
 
 CVEDirectManager::CVEDirectManager(ISensorProvider* sensor)
-:sensor(sensor) {  
+:sensor(sensor), mState(IDLE), mChecksum(0), mTextPointer(0) {  
   jobDone = false;
 
   #if defined(ESP32)
@@ -45,9 +46,8 @@ CVEDirectManager::CVEDirectManager(ISensorProvider* sensor)
     VEDirectStream = &Serial1;
   #endif
 
-  //using std::placeholders::_1;
-  //using std::placeholders::_2;
-  //VEDirectHandler.setErrorHandler(std::bind( &CVEDirectManager::LogHelper, this, _1,_2));
+  
+
   tMillis = 0;
 }
 
@@ -71,14 +71,15 @@ void CVEDirectManager::loop() {
     char rc;
     while (VEDirectStream->available() > 0) {
       rc = VEDirectStream->read();
-      VEDirectHandler.rxData(rc);
-      //Serial.write(rc);
+      rxData(rc);
     }
 
-    Log.infoln("Read %u values", VEDirectHandler.veEnd);
-    //for (int i = 0; i < VEDirectHandler.veEnd; i++ ) {
-    //  Log.infoln("VED '%s'=%s", VEDirectHandler.veName[i], VEDirectHandler.veValue[i]);
-    //}
+    Log.infoln("Read %u values", mVEData.size());
+    std::map<String, String>::iterator it = mVEData.begin();
+    while (it != mVEData.end()) {
+      Log.verboseln("  [%s]='%s'",it->first.c_str(), it->second.c_str());
+      ++it;
+    }
   }
 }
 
@@ -91,6 +92,100 @@ void CVEDirectManager::powerUp() {
   tMillis = 0;
 }
 
-void CVEDirectManager::LogHelper(const char* module, const char* error) {
-  Log.errorln("VED error in %s : %s", module, error);
+void CVEDirectManager::rxData(uint8_t inbyte) {
+  
+  if ( (inbyte == ':') && (mState != CHECKSUM) ) {
+    mState = RECORD_HEX;
+  }
+  if (mState != RECORD_HEX) {
+    mChecksum += inbyte;
+  }
+  inbyte = toupper(inbyte);
+ 
+  switch(mState) {
+    case IDLE:
+      /* wait for \n of the start of an record */
+      switch(inbyte) {
+        case '\n':
+          mState = RECORD_BEGIN;
+          break;
+        case '\r': /* Skip */
+        default:
+          break;
+      }
+      break;
+    case RECORD_BEGIN:
+      mTextPointer = mName;
+      *mTextPointer++ = inbyte;
+      mState = RECORD_NAME;
+      break;
+    case RECORD_NAME:
+      // The record name is being received, terminated by a \t
+      switch(inbyte) {
+      case '\t':
+        // the Checksum record indicates a EOR
+        if ( mTextPointer < (mName + sizeof(mName)) ) {
+          *mTextPointer = 0; /* Zero terminate */
+          if (strcmp(mName, checksumTagName) == 0) {
+            mState = CHECKSUM;
+            break;
+          }
+        }
+        mTextPointer = mValue; /* Reset value pointer */
+        mState = RECORD_VALUE;
+        break;
+      default:
+        // add byte to name, but do no overflow
+        if ( mTextPointer < (mName + sizeof(mName)) )
+          *mTextPointer++ = inbyte;
+        break;
+      }
+      break;
+    case RECORD_VALUE:
+      // The record value is being received.  The \r indicates a new record.
+      switch(inbyte) {
+      case '\n':
+        // forward record, only if it could be stored completely
+        if ( mTextPointer < (mValue + sizeof(mValue)) ) {
+          *mTextPointer = 0; // make zero ended
+          mVEData[String(mName)] = String(mValue);
+        }
+        mState = RECORD_BEGIN;
+        break;
+      case '\r': /* Skip */
+        break;
+      default:
+        // add byte to value, but do no overflow
+        if ( mTextPointer < (mValue + sizeof(mValue)) )
+          *mTextPointer++ = inbyte;
+        break;
+      }
+      break;
+    case CHECKSUM:
+    {
+      if (mChecksum != 0) {
+        Log.warningln("Invalid checksum %x, ignoring frame", mChecksum);
+        mVEData.clear();
+      }
+      mChecksum = 0;
+      mState = IDLE;
+      frameEndEvent(mChecksum == 0);
+      break;
+    }
+    case RECORD_HEX:
+      if (hexRxEvent(inbyte)) {
+        mChecksum = 0;
+        mState = IDLE;
+      }
+      break;
+  }
+}
+
+bool CVEDirectManager::hexRxEvent(uint8_t inbyte) {
+  Log.infoln("Unsupported HEX data %x", inbyte);
+  return true;
+}
+
+void CVEDirectManager::frameEndEvent(bool valid) {
+  
 }

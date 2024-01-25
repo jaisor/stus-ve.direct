@@ -15,11 +15,7 @@ CVEDirectManager *vedManager;
 CDevice *device;
 unsigned long tsMillisBooted;
 
-#if defined(DISABLE_LOGGING) && defined(SEEED_XIAO_M0)
-  #define LED_SETUP PIN_LED_TXL
-#else
-  #define LED_SETUP INTERNAL_LED_PIN
-#endif
+#define LED_SETUP INTERNAL_LED_PIN
 
 void setup() {
 

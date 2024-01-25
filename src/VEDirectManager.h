@@ -1,9 +1,10 @@
 #pragma once
 
+#include <map>
+
 #include "BaseManager.h"
 #include "SensorProvider.h"
 
-#include <VeDirectFrameHandler.h>
 
 class CVEDirectManager: public CBaseManager {
 
@@ -14,10 +15,27 @@ private:
   bool jobDone;
 
   Stream *VEDirectStream;
-  VeDirectFrameHandler VEDirectHandler;
+  std::map<String, String> mVEData;
 
-  void LogHelper(const char* module, const char* error);
-    
+  enum States {
+        IDLE,
+        RECORD_BEGIN,
+        RECORD_NAME,
+        RECORD_VALUE,
+        CHECKSUM,
+        RECORD_HEX
+    };
+
+  int mState;
+  char* mTextPointer;
+  char mName[9];
+  char mValue[33];  
+  uint8_t	mChecksum;
+  
+  void rxData(uint8_t inbyte);
+  bool hexRxEvent(uint8_t inbyte);
+  void frameEndEvent(bool valid);
+  
 public:
 	CVEDirectManager(ISensorProvider* sensor);
   virtual ~CVEDirectManager();
