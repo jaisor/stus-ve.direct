@@ -1,25 +1,26 @@
 #pragma once
 
-#include <RF24.h>
-
 #include "BaseManager.h"
-#include "RF24Message.h"
 #include "SensorProvider.h"
 
-class CRF24Manager: public CBaseManager {
+//#include <VeDirectFrameHandler.h>
+
+class CVEDirectManager: public CBaseManager {
 
 private:
   unsigned long tMillis;
-  uint8_t retries;
-
-  RF24 *radio;
-
+  
   ISensorProvider* sensor;
   bool jobDone;
+
+  Stream *VEDirectStream;
+  //VeDirectFrameHandler VEDirectHandler;
+
+  void LogHelper(const char* module, const char* error);
     
 public:
-	CRF24Manager(ISensorProvider* sensor);
-  virtual ~CRF24Manager();
+	CVEDirectManager(ISensorProvider* sensor);
+  virtual ~CVEDirectManager();
 
   // CBaseManager
   virtual void loop();

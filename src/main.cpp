@@ -7,28 +7,12 @@
 
 #include "Configuration.h"
 #include "RF24Manager.h"
+#include "VEDirectManager.h"
 #include "Device.h"
 
-#if defined(ESP8266)
-  #include <SoftwareSerial.h> // ESP8266 uses software UART because of USB conflict with its single full hardware UART
-#endif
-
-#if defined(ESP32)
-  #define VE_RX GPIO_NUM_16
-  #define VE_TX GPIO_NUM_17
-#elif defined(ESP8266)
-  #define VE_RX D3
-  #define VE_TX D4
-#elif defined(SEEED_XIAO_M0)
-  #define VE_RX D7
-  #define VE_TX D6
-#else
-  #error Unsupported platform
-#endif
-
 CRF24Manager *rf24Manager;
+CVEDirectManager *vedManager;
 CDevice *device;
-Stream *VEDirectStream;
 unsigned long tsMillisBooted;
 
 #if defined(DISABLE_LOGGING) && defined(SEEED_XIAO_M0)
@@ -52,22 +36,9 @@ void setup() {
   #endif
 
   device = new CDevice();
+  vedManager = new CVEDirectManager(device);
   rf24Manager = new CRF24Manager(device);
   tsMillisBooted = millis();
-
-  #if defined(ESP32)
-    Serial2.begin(19200, SERIAL_8N1, VE_RX, VE_TX);
-    VEDirectStream = &Serial2;
-  #elif defined(ESP8266)
-    pinMode(VE_RX, INPUT);
-    pinMode(VE_TX, OUTPUT);
-    SoftwareSerial *ves = new SoftwareSerial(VE_RX, VE_TX);
-    ves->begin(19200, SWSERIAL_8N1);
-    VEDirectStream = ves;
-  #elif defined(SEEED_XIAO_M0)
-    Serial1.begin(19200, SERIAL_8N1);
-    VEDirectStream = &Serial1;
-  #endif
 
   delay(1000);
   Log.infoln("Initialized");
@@ -75,23 +46,12 @@ void setup() {
 }
 
 void loop() {
-
-  // TODO: Eventually use https://github.com/giacinti/VeDirectFrameHandler/blob/master/example/ReadVEDirectFramehandler.ino
-  // Protocol https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.33.pdf
-
   
   intLEDOn();
   device->loop();
+  vedManager->loop();
   rf24Manager->loop();
-
-  // XXX
-  char rc;
-  while (VEDirectStream->available() > 0) {
-    rc = VEDirectStream->read();
-    Serial.write(rc);
-  }
-  // XXX
-
+  
   // Conditions for deep sleep:
   // - Min time elapsed since smooth boot
   // - Any working managers report job done
@@ -121,8 +81,10 @@ void loop() {
     && rf24Manager->isJobDone()) {
     intLEDOff();
     rf24Manager->powerDown();
+    vedManager->powerDown();
     delay(1000); // Wait a second... then rinse and repeat
     rf24Manager->powerUp();
+    vedManager->powerUp();
     tsMillisBooted = millis();
   }
 

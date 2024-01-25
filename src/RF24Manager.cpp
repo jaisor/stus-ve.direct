@@ -11,8 +11,8 @@
   #define CE_PIN  GPIO_NUM_22
   #define CSN_PIN GPIO_NUM_21
 #elif defined(ESP8266)
-  #define CE_PIN  GPIO_NUM_2
-  #define CSN_PIN GPIO_NUM_15
+  #define CE_PIN  D4
+  #define CSN_PIN D8
 #elif defined(SEEED_XIAO_M0)
   #define CE_PIN  D2
   #define CSN_PIN D3
@@ -23,7 +23,6 @@
 #else
   #define MAX_RETRIES_BEFORE_DONE 1
 #endif
-
 
 CRF24Manager::CRF24Manager(ISensorProvider* sensor)
 :sensor(sensor) {  
