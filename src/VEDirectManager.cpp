@@ -45,6 +45,9 @@ CVEDirectManager::CVEDirectManager(ISensorProvider* sensor)
     VEDirectStream = &Serial1;
   #endif
 
+  //using std::placeholders::_1;
+  //using std::placeholders::_2;
+  //VEDirectHandler.setErrorHandler(std::bind( &CVEDirectManager::LogHelper, this, _1,_2));
   tMillis = 0;
 }
 
@@ -60,19 +63,19 @@ void CVEDirectManager::loop() {
     return;
   }
   
-  //if (millis() - tMillis > 1000) {
-    {
+  if (millis() - tMillis > 1000) {
     tMillis = millis();  
 
-    //Log.infoln("Reading VEDirect data");
+    Log.infoln("Reading VEDirect data");
     // Take measurement
     char rc;
     while (VEDirectStream->available() > 0) {
       rc = VEDirectStream->read();
-      //VEDirectHandler.rxData(rc);
-      Serial.write(rc);
+      VEDirectHandler.rxData(rc);
+      //Serial.write(rc);
     }
 
+    Log.infoln("Read %u values", VEDirectHandler.veEnd);
     //for (int i = 0; i < VEDirectHandler.veEnd; i++ ) {
     //  Log.infoln("VED '%s'=%s", VEDirectHandler.veName[i], VEDirectHandler.veValue[i]);
     //}

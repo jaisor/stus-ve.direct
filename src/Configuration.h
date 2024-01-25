@@ -27,7 +27,7 @@
   #define RF24_ADDRESS "3STUS"
 #endif
 
-#define BATTERY_SENSOR  // ADC A0 using 0-3.3v voltage divider
+//#define BATTERY_SENSOR  // ADC A0 using 0-3.3v voltage divider
 #ifdef BATTERY_SENSOR
 
   #if ESP32

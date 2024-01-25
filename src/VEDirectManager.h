@@ -3,7 +3,7 @@
 #include "BaseManager.h"
 #include "SensorProvider.h"
 
-//#include <VeDirectFrameHandler.h>
+#include <VeDirectFrameHandler.h>
 
 class CVEDirectManager: public CBaseManager {
 
@@ -14,7 +14,7 @@ private:
   bool jobDone;
 
   Stream *VEDirectStream;
-  //VeDirectFrameHandler VEDirectHandler;
+  VeDirectFrameHandler VEDirectHandler;
 
   void LogHelper(const char* module, const char* error);
     
