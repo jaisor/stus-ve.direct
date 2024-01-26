@@ -1,6 +1,4 @@
 #include <ArduinoLog.h>
-#include <Arduino.h>
-#include <stdexcept>
 
 #include "RF24Message_VED_INV.h"
 

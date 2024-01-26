@@ -2,8 +2,6 @@
 
 #include <Arduino.h>
 
-#include "Configuration.h"
-
 // Message Uptime-Voltage-Temperature-Humidity-BarometricPressure
 #define MSG_UVTHP_ID 1
 typedef struct r24_message_uvthp_t {

@@ -22,7 +22,6 @@
 #endif
 
 #include "VEDirectManager.h"
-#include "Configuration.h"
 #include "RF24Message_VED_MPPT.h"
 #include "RF24Message_VED_INV.h"
 
