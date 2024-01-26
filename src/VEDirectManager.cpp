@@ -207,18 +207,18 @@ void CVEDirectManager::frameEndEvent(bool valid) {
     const r24_message_ved_mppt_t _msg {
       MSG_VED_MPPT_ID,
       //
-      atof(mVEData[String("V")].c_str()) / 1000.0,
-      atof(mVEData[String("I")].c_str()) / 1000.0,
-      atof(mVEData[String("VPV")].c_str()) / 1000.0,
-      atof(mVEData[String("PPV")].c_str()),
+      static_cast<float>(atoi(mVEData[String("V")].c_str()) / 1000.0),
+      static_cast<float>(atoi(mVEData[String("I")].c_str()) / 1000.0),
+      static_cast<float>(atoi(mVEData[String("VPV")].c_str()) / 1000.0),
+      static_cast<float>(atoi(mVEData[String("PPV")].c_str())),
       //
-      atoi(mVEData[String("CS")].c_str()),
-      atoi(mVEData[String("MPPT")].c_str()),
-      strtol(mVEData[String("OR")].c_str(), NULL, 16),
-      atoi(mVEData[String("ERR")].c_str()),
+      static_cast<uint8_t>(atoi(mVEData[String("CS")].c_str())),
+      static_cast<uint8_t>(atoi(mVEData[String("MPPT")].c_str())),
+      static_cast<uint8_t>(strtol(mVEData[String("OR")].c_str(), NULL, 16)),
+      static_cast<uint8_t>(atoi(mVEData[String("ERR")].c_str())),
       //
-      atof(mVEData[String("H20")].c_str()) / 100.0,
-      atof(mVEData[String("H21")].c_str()) / 100.0,
+      static_cast<uint16_t>(atoi(mVEData[String("H20")].c_str()) / 100.0),
+      static_cast<uint16_t>(atoi(mVEData[String("H21")].c_str())),
       //
       0
     };
@@ -228,16 +228,16 @@ void CVEDirectManager::frameEndEvent(bool valid) {
     const r24_message_ved_inv_t _msg {
       MSG_VED_MPPT_ID,
       //
-      atof(mVEData[String("V")].c_str()) / 1000.0,
-      atof(mVEData[String("AC_OUT_I")].c_str()) / 10.0,
-      atof(mVEData[String("AC_OUT_V")].c_str()) / 100.0,
-      atof(mVEData[String("AC_OUT_S")].c_str()),
+      static_cast<float>(atoi(mVEData[String("V")].c_str()) / 1000.0),
+      static_cast<float>(atoi(mVEData[String("AC_OUT_I")].c_str()) / 10.0),
+      static_cast<float>(atoi(mVEData[String("AC_OUT_V")].c_str()) / 100.0),
+      static_cast<float>(atoi(mVEData[String("AC_OUT_S")].c_str())),
       //
-      atoi(mVEData[String("CS")].c_str()),
-      atoi(mVEData[String("MODE")].c_str()),
-      strtol(mVEData[String("OR")].c_str(), NULL, 16),
-      atoi(mVEData[String("AR")].c_str()),
-      atoi(mVEData[String("WARN")].c_str()),
+      static_cast<uint8_t>(atoi(mVEData[String("CS")].c_str())),
+      static_cast<int8_t>(atoi(mVEData[String("MODE")].c_str())),
+      static_cast<uint8_t>(strtol(mVEData[String("OR")].c_str(), NULL, 16)),
+      static_cast<uint8_t>(atoi(mVEData[String("AR")].c_str())),
+      static_cast<uint8_t>(atoi(mVEData[String("WARN")].c_str())),
       //
       0
     };
