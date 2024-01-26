@@ -45,8 +45,10 @@ void setup() {
 void loop() {
   
   intLEDOn();
-  device->loop();
-  vedManager->loop();
+  if (!rf24Manager->isJobDone()) {
+    device->loop();
+    vedManager->loop();
+  }
   rf24Manager->loop();
 
   // Conditions for deep sleep:
@@ -79,7 +81,8 @@ void loop() {
     intLEDOff();
     rf24Manager->powerDown();
     vedManager->powerDown();
-    delay(1000); // Wait a second... then rinse and repeat
+    Log.infoln("Deep sleep disabled, chilling for a sec");
+    delay(1000);
     rf24Manager->powerUp();
     vedManager->powerUp();
     tsMillisBooted = millis();

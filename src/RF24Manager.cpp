@@ -102,7 +102,7 @@ void CRF24Manager::loop() {
       Log.verboseln(F("Msg: %s"), msg->getString().c_str());
     }
     if (radio->write(msg->getMessageBuffer(), msg->getMessageLength(), true)) {
-      Log.noticeln(F("Transmitted message length %i"), msg->getMessageLength());
+      Log.noticeln(F("Transmitted message (ID=%i) length %i"), msg->getId(), msg->getMessageLength());
       jobDone = true;
     } else {
       if (++retries > MAX_RETRIES_BEFORE_DONE) {

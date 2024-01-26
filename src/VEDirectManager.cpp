@@ -62,21 +62,20 @@ void CVEDirectManager::loop() {
   if (millis() - tMillis > 1000) {
     tMillis = millis();  
 
-    Log.infoln("Reading VEDirect data");
     char rc;
     while (VEDirectStream->available() > 0) {
       rc = VEDirectStream->read();
       rxData(rc);
     }
 
-    Log.infoln("Read %u values", mVEData.size());
-    /*
-    std::map<String, String>::iterator it = mVEData.begin();
-    while (it != mVEData.end()) {
-      Log.verboseln("  [%s]='%s'",it->first.c_str(), it->second.c_str());
-      ++it;
+    Log.verboseln("Read %u VE.Direct values", mVEData.size());
+    if (Log.getLevel() >= LOG_LEVEL_VERBOSE) {
+      std::map<String, String>::iterator it = mVEData.begin();
+      while (it != mVEData.end()) {
+        Log.verboseln("  [%s]='%s'",it->first.c_str(), it->second.c_str());
+        ++it;
+      }
     }
-    */
   }
 }
 
@@ -201,7 +200,7 @@ void CVEDirectManager::frameEndEvent(bool valid) {
     return;
   }
 
-  Log.noticeln("Preparing event for PID '%s'", pid->second.c_str());
+  Log.noticeln("Preparing event for PID '%s' with %i values", pid->second.c_str(), mVEData.size());
   if (pid->second == String("0XA057")) {
     // MPPT
     const r24_message_ved_mppt_t _msg {

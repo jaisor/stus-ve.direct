@@ -6,7 +6,7 @@
 
 //#define DISABLE_LOGGING
 #ifndef DISABLE_LOGGING
-  #define LOG_LEVEL LOG_LEVEL_VERBOSE
+  #define LOG_LEVEL LOG_LEVEL_NOTICE
 #endif
 
 #if defined(ESP32)
