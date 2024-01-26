@@ -70,7 +70,7 @@ CRF24Manager::CRF24Manager(ISensorProvider* sensor, IVEDMessageProvider *vedProv
 
     if (Log.getLevel() >= LOG_LEVEL_VERBOSE) {
       char buffer[870] = {'\0'};
-      uint16_t used_chars = radio->sprintfPrettyDetails(buffer);
+      radio->sprintfPrettyDetails(buffer);
       Log.verboseln(buffer);
     }
   }
