@@ -5,12 +5,10 @@
 #include "RF24Message_VED_MPPT.h"
 
 CRF24Message_VED_MPPT::CRF24Message_VED_MPPT(const u_int8_t pipe, const r24_message_ved_mppt_t msg)
-: CBaseMessage(pipe) {  
+: CBaseMessage(pipe), msg(msg) {  
   
   error = false;
-  this->msg = msg;
   this->msg.id = MSG_VED_MPPT_ID;
-  
 }
 
 CRF24Message_VED_MPPT::CRF24Message_VED_MPPT(const u_int8_t pipe, const void* buf, const uint8_t length)

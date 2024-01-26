@@ -205,28 +205,44 @@ void CVEDirectManager::frameEndEvent(bool valid) {
   Log.noticeln("Preparing event for PID '%s'", pid->second.c_str());
   if (pid->second == String("0XA057")) {
     // MPPT
-    r24_message_ved_mppt_t m;
-    //
-    m.b_voltage = atof(mVEData[String("V")].c_str()) / 1000.0;
-    m.b_current = atof(mVEData[String("I")].c_str()) / 1000.0;
-    m.p_voltage = atof(mVEData[String("VPV")].c_str()) / 1000.0;
-    m.p_power = atof(mVEData[String("PPV")].c_str());
-    /*
-    u_int8_t current_state;
-    u_int8_t mppt;
-    u_int8_t off_reason;
-    u_int8_t error;
-    //
-    u_int16_t today_yield;      // 0.01*Wh
-    u_int16_t today_max_power;  // 0.01*Wh
-    */
-    msg = new CRF24Message_VED_MPPT(0, m);
-    Log.infoln("MSG: %s", msg->getString().c_str());
+    const r24_message_ved_mppt_t _msg {
+      MSG_VED_MPPT_ID,
+      //
+      atof(mVEData[String("V")].c_str()) / 1000.0,
+      atof(mVEData[String("I")].c_str()) / 1000.0,
+      atof(mVEData[String("VPV")].c_str()) / 1000.0,
+      atof(mVEData[String("PPV")].c_str()),
+      //
+      atoi(mVEData[String("CS")].c_str()),
+      atoi(mVEData[String("MPPT")].c_str()),
+      strtol(mVEData[String("OR")].c_str(), NULL, 16),
+      atoi(mVEData[String("ERR")].c_str()),
+      //
+      atof(mVEData[String("H20")].c_str()) / 100.0,
+      atof(mVEData[String("H21")].c_str()) / 100.0,
+      //
+      0
+    };
+    msg = new CRF24Message_VED_MPPT(0, _msg);
   } else if (pid->second == String("0xA2FA")) {
     // INV
-    r24_message_ved_inv_t m;
-    m.b_voltage = atoi(mVEData[String("V")].c_str()) / 1000.0;
-    msg = new CRF24Message_VED_INV(0, m);
+    const r24_message_ved_inv_t _msg {
+      MSG_VED_MPPT_ID,
+      //
+      atof(mVEData[String("V")].c_str()) / 1000.0,
+      atof(mVEData[String("AC_OUT_I")].c_str()) / 10.0,
+      atof(mVEData[String("AC_OUT_V")].c_str()) / 100.0,
+      atof(mVEData[String("AC_OUT_S")].c_str()),
+      //
+      atoi(mVEData[String("CS")].c_str()),
+      atoi(mVEData[String("MODE")].c_str()),
+      strtol(mVEData[String("OR")].c_str(), NULL, 16),
+      atoi(mVEData[String("AR")].c_str()),
+      atoi(mVEData[String("WARN")].c_str()),
+      //
+      0
+    };
+    msg = new CRF24Message_VED_INV(0, _msg);
   } else {
     Log.warningln("Received frame with unsupported PID: %s", pid->second.c_str());
   }

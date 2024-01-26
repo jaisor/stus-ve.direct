@@ -4,16 +4,11 @@
 
 #include "RF24Message.h"
 
-CRF24Message::CRF24Message(const u_int8_t pipe, const uint16_t uptime, const float voltage, const float temperature, const float humidity, const float baro_pressure)
-: CBaseMessage(pipe) {  
+CRF24Message::CRF24Message(const u_int8_t pipe, const r24_message_uvthp_t msg)
+: CBaseMessage(pipe), msg(msg) {  
   
   error = false;
-  msg.id = MSG_UVTHP_ID;
-  setUptime(uptime);
-  setVoltage(voltage);
-  setTemperature(temperature);
-  setHumidity(humidity);
-  setBaroPressure(baro_pressure);
+  this->msg.id = MSG_UVTHP_ID;
 }
 
 CRF24Message::CRF24Message(const u_int8_t pipe, const void* buf, const uint8_t length)
@@ -30,46 +25,6 @@ CRF24Message::CRF24Message(const u_int8_t pipe, const void* buf, const uint8_t l
   } else {
     error = false;
   }
-}
-
-uint32_t CRF24Message::getUptime() {
-  return msg.uptime;
-}
-
-void CRF24Message::setUptime(uint32_t value) {
-  msg.uptime = value;
-}
-
-float CRF24Message::getVoltage() {
-  return msg.voltage;
-}
-
-void CRF24Message::setVoltage(float value) {
-  msg.voltage = value;
-}
-
-float CRF24Message::getTemperature() {
-  return msg.temperature;
-}
-
-void CRF24Message::setTemperature(float value) {
-  msg.temperature = value;
-}
-
-float CRF24Message::getHumidity() {
-  return msg.humidity;
-}
-
-void CRF24Message::setHumidity(float value) {
-  msg.humidity = value;
-}
-
-float CRF24Message::getBaroPressure() {
-  return msg.baro_pressure;
-}
-
-void CRF24Message::setBaroPressure(float value) {
-  msg.baro_pressure = value;
 }
 
 const String CRF24Message::getString() {
