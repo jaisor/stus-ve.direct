@@ -23,14 +23,15 @@
 
 #include "VEDirectManager.h"
 #include "Configuration.h"
+#include "RF24Message_VED_MPPT.h"
+#include "RF24Message_VED_INV.h"
 
 static constexpr char checksumTagName[] = "CHECKSUM";
 
 // Protocol https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.33.pdf
 
-CVEDirectManager::CVEDirectManager(ISensorProvider* sensor)
-:sensor(sensor), mState(IDLE), mChecksum(0), mTextPointer(0) {  
-  jobDone = false;
+CVEDirectManager::CVEDirectManager()
+:tMillis(0), jobDone(false), mState(IDLE), mChecksum(0), mTextPointer(0), msg(NULL) {  
 
   #if defined(ESP32)
     Serial2.begin(19200, SERIAL_8N1, VE_RX, VE_TX);
@@ -45,10 +46,6 @@ CVEDirectManager::CVEDirectManager(ISensorProvider* sensor)
     Serial1.begin(19200, SERIAL_8N1); // Defaults to RX=D7; TX=D8;
     VEDirectStream = &Serial1;
   #endif
-
-  
-
-  tMillis = 0;
 }
 
 CVEDirectManager::~CVEDirectManager() { 
@@ -67,7 +64,6 @@ void CVEDirectManager::loop() {
     tMillis = millis();  
 
     Log.infoln("Reading VEDirect data");
-    // Take measurement
     char rc;
     while (VEDirectStream->available() > 0) {
       rc = VEDirectStream->read();
@@ -75,21 +71,25 @@ void CVEDirectManager::loop() {
     }
 
     Log.infoln("Read %u values", mVEData.size());
+    /*
     std::map<String, String>::iterator it = mVEData.begin();
     while (it != mVEData.end()) {
       Log.verboseln("  [%s]='%s'",it->first.c_str(), it->second.c_str());
       ++it;
     }
+    */
   }
 }
 
 void CVEDirectManager::powerDown() {
   jobDone = true;
+  mVEData.clear();
 }
 
 void CVEDirectManager::powerUp() {
   jobDone = false;
   tMillis = 0;
+  mVEData.clear();
 }
 
 void CVEDirectManager::rxData(uint8_t inbyte) {
@@ -187,5 +187,47 @@ bool CVEDirectManager::hexRxEvent(uint8_t inbyte) {
 }
 
 void CVEDirectManager::frameEndEvent(bool valid) {
-  
+  if (msg != NULL) {
+    delete msg;
+    msg = NULL;
+  }
+
+  if (!valid) {
+    return;
+  }
+
+  std::map<String, String>::const_iterator pid = mVEData.find(String("PID"));
+  if (pid == mVEData.end()) {
+    Log.errorln("Received frame without a PID");
+    return;
+  }
+
+  Log.noticeln("Preparing event for PID '%s'", pid->second.c_str());
+  if (pid->second == String("0XA057")) {
+    // MPPT
+    r24_message_ved_mppt_t m;
+    //
+    m.b_voltage = atof(mVEData[String("V")].c_str()) / 1000.0;
+    m.b_current = atof(mVEData[String("I")].c_str()) / 1000.0;
+    m.p_voltage = atof(mVEData[String("VPV")].c_str()) / 1000.0;
+    m.p_power = atof(mVEData[String("PPV")].c_str());
+    /*
+    u_int8_t current_state;
+    u_int8_t mppt;
+    u_int8_t off_reason;
+    u_int8_t error;
+    //
+    u_int16_t today_yield;      // 0.01*Wh
+    u_int16_t today_max_power;  // 0.01*Wh
+    */
+    msg = new CRF24Message_VED_MPPT(0, m);
+    Log.infoln("MSG: %s", msg->getString().c_str());
+  } else if (pid->second == String("0xA2FA")) {
+    // INV
+    r24_message_ved_inv_t m;
+    m.b_voltage = atoi(mVEData[String("V")].c_str()) / 1000.0;
+    msg = new CRF24Message_VED_INV(0, m);
+  } else {
+    Log.warningln("Received frame with unsupported PID: %s", pid->second.c_str());
+  }
 }

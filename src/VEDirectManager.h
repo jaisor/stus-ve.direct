@@ -3,15 +3,12 @@
 #include <map>
 
 #include "BaseManager.h"
-#include "SensorProvider.h"
+#include "VEDMessageProvider.h"
 
-
-class CVEDirectManager: public CBaseManager {
+class CVEDirectManager: public CBaseManager, public IVEDMessageProvider {
 
 private:
   unsigned long tMillis;
-  
-  ISensorProvider* sensor;
   bool jobDone;
 
   Stream *VEDirectStream;
@@ -27,17 +24,19 @@ private:
     };
 
   int mState;
-  char* mTextPointer;
-  char mName[9];
-  char mValue[33];  
   uint8_t	mChecksum;
+  char *mTextPointer;
+  char mName[9];
+  char mValue[33]; 
+
+  CBaseMessage *msg;
   
   void rxData(uint8_t inbyte);
   bool hexRxEvent(uint8_t inbyte);
   void frameEndEvent(bool valid);
   
 public:
-	CVEDirectManager(ISensorProvider* sensor);
+	CVEDirectManager();
   virtual ~CVEDirectManager();
 
   // CBaseManager
@@ -45,4 +44,6 @@ public:
   virtual void powerDown();
   virtual void powerUp();
   virtual const bool isJobDone() { return jobDone; }
+
+  virtual CBaseMessage* checkForMessage() { return mState == IDLE ? msg : NULL; }
 };

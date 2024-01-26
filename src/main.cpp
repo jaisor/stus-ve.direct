@@ -6,9 +6,10 @@
 #include <SPI.h>
 
 #include "Configuration.h"
+#include "Device.h"
+#include "VEDMessageProvider.h"
 #include "RF24Manager.h"
 #include "VEDirectManager.h"
-#include "Device.h"
 
 CRF24Manager *rf24Manager;
 CVEDirectManager *vedManager;
@@ -32,8 +33,8 @@ void setup() {
   #endif
 
   device = new CDevice();
-  vedManager = new CVEDirectManager(device);
-  rf24Manager = new CRF24Manager(device);
+  vedManager = new CVEDirectManager();
+  rf24Manager = new CRF24Manager(device, vedManager);
   tsMillisBooted = millis();
 
   delay(1000);
@@ -47,7 +48,7 @@ void loop() {
   device->loop();
   vedManager->loop();
   rf24Manager->loop();
-  
+
   // Conditions for deep sleep:
   // - Min time elapsed since smooth boot
   // - Any working managers report job done

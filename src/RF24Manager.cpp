@@ -6,6 +6,10 @@
 
 #include "RF24Manager.h"
 #include "Configuration.h"
+#include "RF24Message.h"
+#include "RF24Message_VED_MPPT.h"
+#include "RF24Message_VED_INV.h"
+
 
 #if defined(ESP32)
   #define CE_PIN  GPIO_NUM_22
@@ -24,8 +28,8 @@
   #define MAX_RETRIES_BEFORE_DONE 1
 #endif
 
-CRF24Manager::CRF24Manager(ISensorProvider* sensor)
-:sensor(sensor) {  
+CRF24Manager::CRF24Manager(ISensorProvider* sensor, IVEDMessageProvider *vedProvider)
+:sensor(sensor), vedProvider(vedProvider) {  
   jobDone = false;
   radio = new RF24(CE_PIN, CSN_PIN);
   
@@ -92,33 +96,27 @@ void CRF24Manager::loop() {
   }
 
   // Take measurement
-  CRF24Message msg(
-    0, 
-    sensor->getUptime(),
-    0, // sensor->getBatteryVoltage(NULL), // in V
-    0, //sensor->getTemperature(NULL), // in C
-    0, //sensor->getHumidity(NULL), // in %
-    0 //sensor->getBaroPressure(NULL) // in Pascal
-  );
-
-  if (Log.getLevel() >= LOG_LEVEL_VERBOSE) {
-    Log.verboseln(F("Msg: %s"), msg.getString().c_str());
-  }
-
-  if (radio->write(msg.getMessageBuffer(), msg.getMessageLength(), true)) {
-    Log.noticeln(F("Transmitted message length %i with voltage %D"), msg.getMessageLength(), msg.getVoltage());
-    msg.setVoltage(msg.getVoltage() + 0.01);
-    jobDone = true;
-  } else {
-    if (++retries > MAX_RETRIES_BEFORE_DONE) {
-      Log.warningln(F("Failed to transmit after %i retries"), retries);
-      jobDone = true;
-      return;
+  CBaseMessage *msg = vedProvider->checkForMessage();
+  if (msg != NULL) { 
+    if (Log.getLevel() >= LOG_LEVEL_VERBOSE) {
+      Log.verboseln(F("Msg: %s"), msg->getString().c_str());
     }
-    uint16_t backoffDelaySec = 100 * retries * retries;  // Exp back off with each attempt
-    Log.noticeln(F("RF24 transmit error, will try again for attempt %i after %i seconds"), retries, backoffDelaySec);
-    delay(backoffDelaySec);
-    intLEDBlink(50);
+    if (radio->write(msg->getMessageBuffer(), msg->getMessageLength(), true)) {
+      Log.noticeln(F("Transmitted message length %i"), msg->getMessageLength());
+      jobDone = true;
+    } else {
+      if (++retries > MAX_RETRIES_BEFORE_DONE) {
+        // Lost cause
+        Log.warningln(F("Failed to transmit after %i retries"), retries);
+        jobDone = true;
+      } else {
+        // Retry
+        uint16_t backoffDelaySec = 100 * retries * retries;  // Exp back off with each attempt
+        Log.noticeln(F("RF24 transmit error, will try again for attempt %i after %i seconds"), retries, backoffDelaySec);
+        delay(backoffDelaySec);
+        intLEDBlink(50);
+      }
+    }
   }
 }
 
