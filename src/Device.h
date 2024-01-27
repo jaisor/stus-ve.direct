@@ -51,7 +51,7 @@ private:
   float _temperature;
 #ifdef TEMP_SENSOR_DS18B20
   OneWire *oneWire;
-  DS18B20 *_ds18b20;
+  DS18B20 *ds18b20;
 #endif
 #ifdef TEMP_SENSOR_BME280
   float _humidity, _baro_pressure;

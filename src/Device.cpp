@@ -14,23 +14,25 @@ CDevice::CDevice() {
 
   tLastReading = 0;
 #ifdef TEMP_SENSOR_DS18B20
-  pinMode(TEMP_SENSOR_PIN, INPUT);
+  pinMode(TEMP_SENSOR_PIN, INPUT_PULLUP);
   oneWire = new OneWire(TEMP_SENSOR_PIN);
   DeviceAddress da;
-  _ds18b20 = new DS18B20(oneWire);
-  _ds18b20->setConfig(DS18B20_CRC);
-  _ds18b20->begin();
+  ds18b20 = new DS18B20(oneWire);
+  ds18b20->setConfig(DS18B20_CRC);
+  ds18b20->begin();
 
-  _ds18b20->getAddress(da);
-  Log.notice(F("DS18B20 sensor at address: "));
+  ds18b20->getAddress(da);
+  String addr = "";
   for (uint8_t i = 0; i < 8; i++) {
-    if (da[i] < 16) Log.notice("o");
-    Log.notice("%x", da[i]);
+    if (da[i] < 16) {
+      addr += String("o");
+    }
+    addr += String(da[i], HEX);
   }
-  Log.noticeln(F(""));
+  Log.noticeln(F("DS18B20 sensor at address: %s"), addr.c_str());
   
-  _ds18b20->setResolution(12);
-  _ds18b20->requestTemperatures();
+  ds18b20->setResolution(12);
+  ds18b20->requestTemperatures();
 
   sensorReady = true;
   tMillisTemp = 0;
@@ -72,7 +74,7 @@ CDevice::CDevice() {
 
 CDevice::~CDevice() { 
 #ifdef TEMP_SENSOR_DS18B20
-  delete _ds18b20;
+  delete ds18b20;
 #endif
 #ifdef TEMP_SENSOR_BME280
   delete _bme;
@@ -95,18 +97,15 @@ void CDevice::loop() {
   }
 
   if (sensorReady && millis() - tMillisTemp > delay) {
-    if (millis() - tLastReading < STALE_READING_AGE_MS) {
-      tMillisTemp = millis();
-    }
     #ifdef TEMP_SENSOR_DS18B20
-      if (_ds18b20->isConversionComplete()) {
-        _temperature = _ds18b20->getTempC();
-        _ds18b20->setResolution(12);
-        _ds18b20->requestTemperatures();
+      if (ds18b20->isConversionComplete()) {
+        _temperature = ds18b20->getTempC();
+        ds18b20->setResolution(12);
+        ds18b20->requestTemperatures();
         tLastReading = millis();
-        Log.verboseln(F("DS18B20 temp: %FC %FF"), _temperature, _temperature*1.8+32);
+        Log.infoln(F("DS18B20 temp: %FC %FF"), _temperature, _temperature*1.8+32);
       } else {
-        //Log.verboseln(F("DS18B20 conversion not complete"));
+        //Log.infoln(F("DS18B20 conversion not complete"));
       }
     #endif
     #ifdef TEMP_SENSOR_BME280

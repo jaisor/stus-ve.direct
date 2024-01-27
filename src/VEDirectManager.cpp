@@ -200,9 +200,14 @@ void CVEDirectManager::frameEndEvent(bool valid) {
     return;
   }
 
-  float temp = sensor->getTemperature(NULL);
+  bool tempCurrent = false;
+  float temp = sensor->getTemperature(&tempCurrent);
+  if (!sensor->isSensorReady() || !tempCurrent) {
+    Log.verboseln("Skipping frame while temperature sensor not ready or stale");
+    return;
+  }
 
-  Log.noticeln("Preparing event for PID '%s' with %i values", pid->second.c_str(), mVEData.size());
+  Log.noticeln("Preparing event for PID '%s' with %i values and sensor temp %DC (%i)", pid->second.c_str(), mVEData.size(), temp, tempCurrent);
   if (pid->second == String("0XA057")) {
     // MPPT
     const r24_message_ved_mppt_t _msg {
