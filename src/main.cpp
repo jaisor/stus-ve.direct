@@ -48,8 +48,8 @@ void loop() {
   if (!rf24Manager->isJobDone()) {
     device->loop();
     vedManager->loop();
+    rf24Manager->loop();
   }
-  rf24Manager->loop();
 
   // Conditions for deep sleep:
   // - Min time elapsed since smooth boot
@@ -78,6 +78,7 @@ void loop() {
   } else if (DEEP_SLEEP_INTERVAL_SEC == 0 
     && millis() - tsMillisBooted > DEEP_SLEEP_MIN_AWAKE_MS
     && rf24Manager->isJobDone()) {
+      
     intLEDOff();
     rf24Manager->powerDown();
     vedManager->powerDown();

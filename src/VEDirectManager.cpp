@@ -162,7 +162,7 @@ void CVEDirectManager::rxData(uint8_t inbyte) {
     case CHECKSUM:
     {
       if (mChecksum != 0) {
-        Log.warningln("Invalid checksum %x, ignoring frame", mChecksum);
+        Log.warningln("Ignoring frame with invalid checksum %x", mChecksum);
         mVEData.clear();
       }
       mChecksum = 0;
@@ -196,7 +196,7 @@ void CVEDirectManager::frameEndEvent(bool valid) {
 
   std::map<String, String>::const_iterator pid = mVEData.find(String("PID"));
   if (pid == mVEData.end()) {
-    Log.errorln("Received frame without a PID");
+    Log.warningln("Ignoring frame without a PID");
     return;
   }
 
