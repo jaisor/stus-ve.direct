@@ -33,8 +33,8 @@ void setup() {
   #endif
 
   device = new CDevice();
-  vedManager = new CVEDirectManager();
-  rf24Manager = new CRF24Manager(device, vedManager);
+  vedManager = new CVEDirectManager(device);
+  rf24Manager = new CRF24Manager(vedManager);
   tsMillisBooted = millis();
 
   delay(1000);

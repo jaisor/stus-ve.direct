@@ -28,8 +28,8 @@
   #define MAX_RETRIES_BEFORE_DONE 1
 #endif
 
-CRF24Manager::CRF24Manager(ISensorProvider* sensor, IVEDMessageProvider *vedProvider)
-:sensor(sensor), vedProvider(vedProvider) {  
+CRF24Manager::CRF24Manager(IVEDMessageProvider *vedProvider)
+:vedProvider(vedProvider) {  
   jobDone = false;
   radio = new RF24(CE_PIN, CSN_PIN);
   

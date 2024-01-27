@@ -29,8 +29,8 @@ static constexpr char checksumTagName[] = "CHECKSUM";
 
 // Protocol https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.33.pdf
 
-CVEDirectManager::CVEDirectManager()
-:tMillis(0), jobDone(false), mState(IDLE), mChecksum(0), mTextPointer(0), msg(NULL) {  
+CVEDirectManager::CVEDirectManager(ISensorProvider* sensor)
+:tMillis(0), jobDone(false), mState(IDLE), mChecksum(0), mTextPointer(0), msg(NULL), sensor(sensor) {  
 
   #if defined(ESP32)
     Serial2.begin(19200, SERIAL_8N1, VE_RX, VE_TX);
@@ -200,6 +200,8 @@ void CVEDirectManager::frameEndEvent(bool valid) {
     return;
   }
 
+  float temp = sensor->getTemperature(NULL);
+
   Log.noticeln("Preparing event for PID '%s' with %i values", pid->second.c_str(), mVEData.size());
   if (pid->second == String("0XA057")) {
     // MPPT
@@ -219,7 +221,7 @@ void CVEDirectManager::frameEndEvent(bool valid) {
       static_cast<uint16_t>(atoi(mVEData[String("H20")].c_str()) / 100.0),
       static_cast<uint16_t>(atoi(mVEData[String("H21")].c_str())),
       //
-      0
+      temp
     };
     msg = new CRF24Message_VED_MPPT(0, _msg);
   } else if (pid->second == String("0xA2FA")) {
@@ -238,7 +240,7 @@ void CVEDirectManager::frameEndEvent(bool valid) {
       static_cast<uint8_t>(atoi(mVEData[String("AR")].c_str())),
       static_cast<uint8_t>(atoi(mVEData[String("WARN")].c_str())),
       //
-      0
+      temp
     };
     msg = new CRF24Message_VED_INV(0, _msg);
   } else {

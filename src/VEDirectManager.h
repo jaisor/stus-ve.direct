@@ -4,6 +4,7 @@
 
 #include "BaseManager.h"
 #include "VEDMessageProvider.h"
+#include "SensorProvider.h"
 
 class CVEDirectManager: public CBaseManager, public IVEDMessageProvider {
 
@@ -30,13 +31,14 @@ private:
   char mValue[33]; 
 
   CBaseMessage *msg;
+  ISensorProvider* sensor;
   
   void rxData(uint8_t inbyte);
   bool hexRxEvent(uint8_t inbyte);
   void frameEndEvent(bool valid);
   
 public:
-	CVEDirectManager();
+	CVEDirectManager(ISensorProvider* sensor);
   virtual ~CVEDirectManager();
 
   // CBaseManager
