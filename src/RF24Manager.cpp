@@ -6,9 +6,6 @@
 
 #include "RF24Manager.h"
 #include "Configuration.h"
-#include "RF24Message.h"
-#include "RF24Message_VED_MPPT.h"
-#include "RF24Message_VED_INV.h"
 
 
 #if defined(ESP32)
@@ -43,12 +40,7 @@ CRF24Manager::CRF24Manager(IVEDMessageProvider *vedProvider)
   uint8_t addr[6];
   memcpy(addr, RF24_ADDRESS, 6);
 
-  uint8_t maxMessageSize = sizeof(r24_message_uvthp_t);
-  if (sizeof(r24_message_ved_inv_t) > maxMessageSize) { maxMessageSize = sizeof(r24_message_ved_inv_t); }
-  if (sizeof(r24_message_ved_mppt_t) > maxMessageSize) { maxMessageSize = sizeof(r24_message_ved_mppt_t); }
-  Log.verboseln("sizeof(r24_message_uvthp_t): %u", sizeof(r24_message_uvthp_t));
-  Log.verboseln("sizeof(r24_message_ved_inv_t): %u", sizeof(r24_message_ved_inv_t));
-  Log.verboseln("sizeof(r24_message_ved_mppt_t): %u", sizeof(r24_message_ved_mppt_t));
+  const uint8_t maxMessageSize = 32;
   Log.infoln("Max message size: %u", maxMessageSize);
   
   radio->setAddressWidth(5);
@@ -102,7 +94,8 @@ void CRF24Manager::loop() {
       Log.verboseln(F("Msg: %s"), msg->getString().c_str());
     }
     if (radio->write(msg->getMessageBuffer(), msg->getMessageLength(), true)) {
-      Log.noticeln(F("Transmitted message (ID=%i) length %i"), msg->getId(), msg->getMessageLength());
+      tMillis = millis();
+      Log.noticeln(F("Transmitted message (ID=%i) length %i: %s"), msg->getId(), msg->getMessageLength(), msg->getString().c_str());
       jobDone = true;
     } else {
       if (++retries > MAX_RETRIES_BEFORE_DONE) {
@@ -117,6 +110,9 @@ void CRF24Manager::loop() {
         intLEDBlink(50);
       }
     }
+  } else if (millis() - tMillis > 5000) {
+    tMillis = millis();
+    Log.warningln("No VE.Direct message for over 5sec");
   }
 }
 

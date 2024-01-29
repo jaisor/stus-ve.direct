@@ -162,7 +162,7 @@ void CVEDirectManager::rxData(uint8_t inbyte) {
     case CHECKSUM:
     {
       if (mChecksum != 0) {
-        Log.warningln("Ignoring frame with invalid checksum %x", mChecksum);
+        Log.traceln("Ignoring frame with invalid checksum %x", mChecksum);
         mVEData.clear();
       }
       mChecksum = 0;
@@ -207,7 +207,7 @@ void CVEDirectManager::frameEndEvent(bool valid) {
     return;
   }
 
-  Log.noticeln("Preparing event for PID '%s' with %i values and sensor temp %DC (%i)", pid->second.c_str(), mVEData.size(), temp, tempCurrent);
+  Log.traceln("Preparing event for PID '%s' with %i values and sensor temp %DC", pid->second.c_str(), mVEData.size(), temp);
   if (pid->second == String("0XA057")) {
     // MPPT
     const r24_message_ved_mppt_t _msg {
@@ -223,7 +223,7 @@ void CVEDirectManager::frameEndEvent(bool valid) {
       static_cast<uint8_t>(strtol(mVEData[String("OR")].c_str(), NULL, 16)),
       static_cast<uint8_t>(atoi(mVEData[String("ERR")].c_str())),
       //
-      static_cast<uint16_t>(atoi(mVEData[String("H20")].c_str()) / 100.0),
+      static_cast<uint16_t>(atoi(mVEData[String("H20")].c_str()) * 10),
       static_cast<uint16_t>(atoi(mVEData[String("H21")].c_str())),
       //
       temp
@@ -232,7 +232,7 @@ void CVEDirectManager::frameEndEvent(bool valid) {
   } else if (pid->second == String("0xA2FA")) {
     // INV
     const r24_message_ved_inv_t _msg {
-      MSG_VED_MPPT_ID,
+      MSG_VED_INV_ID,
       //
       static_cast<float>(atoi(mVEData[String("V")].c_str()) / 1000.0),
       static_cast<float>(atoi(mVEData[String("AC_OUT_I")].c_str()) / 10.0),

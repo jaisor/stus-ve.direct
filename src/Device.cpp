@@ -87,7 +87,7 @@ CDevice::~CDevice() {
 
 void CDevice::loop() {
 
-  uint32_t delay = 1000;
+  uint32_t delay = 500;
   #ifdef TEMP_SENSOR_DHT
     delay = minDelayMs;
   #endif
@@ -103,7 +103,7 @@ void CDevice::loop() {
         ds18b20->setResolution(12);
         ds18b20->requestTemperatures();
         tLastReading = millis();
-        Log.infoln(F("DS18B20 temp: %FC %FF"), _temperature, _temperature*1.8+32);
+        Log.traceln(F("DS18B20 temp: %FC %FF"), _temperature, _temperature*1.8+32);
       } else {
         //Log.infoln(F("DS18B20 conversion not complete"));
       }

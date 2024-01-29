@@ -19,15 +19,15 @@ unsigned long tsMillisBooted;
 #define LED_SETUP INTERNAL_LED_PIN
 
 void setup() {
-
-  pinMode(INTERNAL_LED_PIN, OUTPUT);
+  randomSeed(analogRead(0));
   
+  pinMode(INTERNAL_LED_PIN, OUTPUT);
   pinMode(LED_SETUP, OUTPUT);
+  
   digitalWrite(LED_SETUP, LOW);
 
   #ifndef DISABLE_LOGGING
-  Serial.begin(19200);  while (!Serial); delay(100);
-  randomSeed(analogRead(0));
+  Serial.begin(19200); while (!Serial); delay(100);
   Log.begin(LOG_LEVEL, &Serial);
   Log.infoln("Initializing...");
   #endif
@@ -37,8 +37,12 @@ void setup() {
   rf24Manager = new CRF24Manager(vedManager);
   tsMillisBooted = millis();
 
-  delay(1000);
+  delay(300);
   Log.infoln("Initialized");
+  digitalWrite(LED_SETUP, HIGH);
+  delay(100);
+  digitalWrite(LED_SETUP, LOW);
+  delay(100);
   digitalWrite(LED_SETUP, HIGH);
 }
 
