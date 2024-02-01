@@ -4,9 +4,9 @@
 #include <functional>
 #include <ArduinoLog.h>
 
-#define DISABLE_LOGGING
+//#define DISABLE_LOGGING
 #ifndef DISABLE_LOGGING
-  #define LOG_LEVEL LOG_LEVEL_INFO
+  #define LOG_LEVEL LOG_LEVEL_VERBOSE
 #endif
 
 #if defined(ESP32)
@@ -63,7 +63,7 @@
   #define TEMP_SENSOR_PIN D4
 #endif
 
-#define DEEP_SLEEP_INTERVAL_SEC 300 // 5 min default, 0 - disabled
+#define DEEP_SLEEP_INTERVAL_SEC 0 // 300 // 5 min default, 0 - disabled
 #define DEEP_SLEEP_MIN_AWAKE_MS 500 // Minimum time to remain awake after smooth boot before sleeping again
 #define BATTERY_VOLTS_DIVIDER 217.55
 

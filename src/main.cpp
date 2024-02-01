@@ -37,6 +37,14 @@ void setup() {
   rf24Manager = new CRF24Manager(vedManager);
   tsMillisBooted = millis();
 
+  if (rf24Manager->isError() || vedManager->isError()) {
+    Log.errorln("rf24Manager->isError()=%i; vedManager->isError()=%i", rf24Manager->isError(), vedManager->isError());
+    while(true) {
+      intLEDBlink(250);
+      delay(250);
+    }
+  }
+
   delay(300);
   Log.infoln("Initialized");
   digitalWrite(LED_SETUP, HIGH);

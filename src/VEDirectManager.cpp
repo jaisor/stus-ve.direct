@@ -24,13 +24,14 @@
 #include "VEDirectManager.h"
 #include "RF24Message_VED_MPPT.h"
 #include "RF24Message_VED_INV.h"
+#include "RF24Message.h"
 
 static constexpr char checksumTagName[] = "CHECKSUM";
 
 // Protocol https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.33.pdf
 
 CVEDirectManager::CVEDirectManager(ISensorProvider* sensor)
-:tMillis(0), jobDone(false), mState(IDLE), mChecksum(0), mTextPointer(0), msg(NULL), sensor(sensor) {  
+:tMillis(0), tMillisError(millis()), jobDone(false), mState(IDLE), mChecksum(0), mTextPointer(0), msg(NULL), sensor(sensor) {  
 
   #if defined(ESP32)
     Serial2.begin(19200, SERIAL_8N1, VE_RX, VE_TX);
@@ -76,17 +77,45 @@ void CVEDirectManager::loop() {
         ++it;
       }
     }
+
+    if (checkForMessage() != NULL) {
+      // S'all good
+      tMillisError = millis();
+    } else if (millis() - tMillisError > 10000) {
+      // Prepare error message
+      Log.warningln(F("Preparing error message about VEDirect communication failure"));
+      tMillisError = millis();
+      const r24_message_uvthp_t _msg = {
+        MSG_UVTHP_ID,
+        CONFIG_getUpTime(),
+        sensor->getBatteryVoltage(NULL),
+        sensor->getTemperature(NULL),
+        sensor->getHumidity(NULL),
+        sensor->getBaroPressure(NULL),
+        VEDirectCommFail
+      };
+      msg = new CRF24Message(0, _msg);
+    }
   }
 }
 
 void CVEDirectManager::powerDown() {
   jobDone = true;
+  if (msg != NULL) {
+    delete msg;
+    msg = NULL;
+  }
   mVEData.clear();
 }
 
 void CVEDirectManager::powerUp() {
   jobDone = false;
   tMillis = 0;
+  if (msg != NULL) {
+    delete msg;
+    msg = NULL;
+  }
+  tMillisError = millis();
   mVEData.clear();
 }
 
@@ -207,6 +236,7 @@ void CVEDirectManager::frameEndEvent(bool valid) {
     return;
   }
 
+  tMillisError = millis();
   Log.traceln("Preparing event for PID '%s' with %i values and sensor temp %DC", pid->second.c_str(), mVEData.size(), temp);
   if (pid->second == String("0XA057")) {
     // MPPT

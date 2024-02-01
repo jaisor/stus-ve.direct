@@ -10,6 +10,7 @@ class CVEDirectManager: public CBaseManager, public IVEDMessageProvider {
 
 private:
   unsigned long tMillis;
+  unsigned long tMillisError;
   bool jobDone;
 
   Stream *VEDirectStream;

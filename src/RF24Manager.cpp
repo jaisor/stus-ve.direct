@@ -32,11 +32,11 @@ CRF24Manager::CRF24Manager(IVEDMessageProvider *vedProvider)
   
   if (!radio->begin()) {
     Log.errorln(F("Failed to initialize RF24 radio"));
+    error = true;
     return;
   }
 
   #ifdef RADIO_RF24
-
   uint8_t addr[6];
   memcpy(addr, RF24_ADDRESS, 6);
 
@@ -70,6 +70,7 @@ CRF24Manager::CRF24Manager(IVEDMessageProvider *vedProvider)
     jobDone = true;
   #endif
 
+  error = false;
   tMillis = millis();
   retries = 0;
 }

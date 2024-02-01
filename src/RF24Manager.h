@@ -10,6 +10,7 @@ class CRF24Manager: public CBaseManager {
 private:
   unsigned long tMillis;
   uint8_t retries;
+  bool error;
 
   RF24 *radio;
 
@@ -25,4 +26,5 @@ public:
   virtual void powerDown();
   virtual void powerUp();
   virtual const bool isJobDone() { return jobDone; }
+  virtual const bool isError() { return error; }
 };
