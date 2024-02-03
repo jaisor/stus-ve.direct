@@ -3,6 +3,7 @@
 #include <RF24.h>
 #include <nRF24L01.h>
 #include <ArduinoLog.h>
+#include <set>
 
 #if defined(ESP8266)
   #include <SoftwareSerial.h> // ESP8266 uses software UART because of USB conflict with its single full hardware UART
@@ -27,6 +28,9 @@
 #include "RF24Message.h"
 
 static constexpr char checksumTagName[] = "CHECKSUM";
+
+const std::set<uint16_t> PIDS_MPPT = {0XA057, 0XA055}; //
+const std::set<uint16_t> PIDS_INV = {0xA2FA}; //
 
 // Protocol https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.33.pdf
 
@@ -236,10 +240,11 @@ void CVEDirectManager::frameEndEvent(bool valid) {
     return;
   }
 
+  uint16_t pidInt = std::stoul(pid->second.c_str(), nullptr, 16);
   tMillisError = millis();
-  Log.traceln("Preparing event for PID '%s' with %i values and sensor temp %DC", pid->second.c_str(), mVEData.size(), temp);
-  if (pid->second == String("0XA057")) {
-    // MPPT
+  Log.traceln("Preparing event for PID '%s'(%x) with %i values and sensor temp %DC", pid->second.c_str(), pidInt, mVEData.size(), temp);
+  if (PIDS_MPPT.find(pidInt) != PIDS_MPPT.end()) {
+    Log.traceln("PID is MPPT charger");
     const r24_message_ved_mppt_t _msg {
       MSG_VED_MPPT_ID,
       //
@@ -259,8 +264,8 @@ void CVEDirectManager::frameEndEvent(bool valid) {
       temp
     };
     msg = new CRF24Message_VED_MPPT(0, _msg);
-  } else if (pid->second == String("0xA2FA")) {
-    // INV
+  } else if (PIDS_INV.find(pidInt) != PIDS_INV.end()) {
+    Log.traceln("PID is MPPT inverter");
     const r24_message_ved_inv_t _msg {
       MSG_VED_INV_ID,
       //
