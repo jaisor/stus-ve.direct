@@ -14,7 +14,7 @@ CDevice::CDevice() {
 
   tLastReading = 0;
 #ifdef TEMP_SENSOR_DS18B20
-  pinMode(TEMP_SENSOR_PIN, INPUT_PULLUP);
+  pinMode(TEMP_SENSOR_PIN, INPUT);
   oneWire = new OneWire(TEMP_SENSOR_PIN);
   DeviceAddress da;
   ds18b20 = new DS18B20(oneWire);

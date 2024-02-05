@@ -31,6 +31,7 @@ static constexpr char checksumTagName[] = "CHECKSUM";
 
 const std::set<uint16_t> PIDS_MPPT = {0XA057, 0XA055}; //
 const std::set<uint16_t> PIDS_INV = {0xA2FA}; //
+const std::set<uint16_t> PIDS_BATT = {0XA389}; //
 
 // Protocol https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.33.pdf
 
@@ -265,7 +266,26 @@ void CVEDirectManager::frameEndEvent(bool valid) {
     };
     msg = new CRF24Message_VED_MPPT(0, _msg);
   } else if (PIDS_INV.find(pidInt) != PIDS_INV.end()) {
-    Log.traceln("PID is MPPT inverter");
+    Log.traceln("PID is AC inverter");
+    const r24_message_ved_inv_t _msg {
+      MSG_VED_INV_ID,
+      //
+      static_cast<float>(atoi(mVEData[String("V")].c_str()) / 1000.0),
+      static_cast<float>(atoi(mVEData[String("AC_OUT_I")].c_str()) / 10.0),
+      static_cast<float>(atoi(mVEData[String("AC_OUT_V")].c_str()) / 100.0),
+      static_cast<float>(atoi(mVEData[String("AC_OUT_S")].c_str())),
+      //
+      static_cast<uint8_t>(atoi(mVEData[String("CS")].c_str())),
+      static_cast<int8_t>(atoi(mVEData[String("MODE")].c_str())),
+      static_cast<uint8_t>(strtol(mVEData[String("OR")].c_str(), NULL, 16)),
+      static_cast<uint8_t>(atoi(mVEData[String("AR")].c_str())),
+      static_cast<uint8_t>(atoi(mVEData[String("WARN")].c_str())),
+      //
+      temp
+    };
+    msg = new CRF24Message_VED_INV(0, _msg);
+  } else if (PIDS_BATT.find(pidInt) != PIDS_INV.end()) {
+    Log.traceln("PID is BATT monitor");
     const r24_message_ved_inv_t _msg {
       MSG_VED_INV_ID,
       //
