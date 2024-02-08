@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <queue>
 
 #include "BaseManager.h"
 #include "VEDMessageProvider.h"
@@ -31,12 +32,13 @@ private:
   char mName[9];
   char mValue[33]; 
 
-  CBaseMessage *msg;
+  std::queue<CBaseMessage*> messages;
   ISensorProvider* sensor;
   
   void rxData(uint8_t inbyte);
   bool hexRxEvent(uint8_t inbyte);
   void frameEndEvent(bool valid);
+  void addMessage(CBaseMessage *msg);
   
 public:
 	CVEDirectManager(ISensorProvider* sensor);
@@ -48,5 +50,5 @@ public:
   virtual void powerUp();
   virtual const bool isJobDone() { return jobDone; }
 
-  virtual CBaseMessage* checkForMessage() { return mState == IDLE ? msg : NULL; }
+  virtual CBaseMessage* pollMessage();
 };

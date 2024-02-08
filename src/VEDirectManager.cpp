@@ -36,7 +36,7 @@ const std::set<uint16_t> PIDS_BATT = {0XA389}; //
 // Protocol https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.33.pdf
 
 CVEDirectManager::CVEDirectManager(ISensorProvider* sensor)
-:tMillis(0), tMillisError(millis()), jobDone(false), mState(IDLE), mChecksum(0), mTextPointer(0), msg(NULL), sensor(sensor) {  
+:tMillis(0), tMillisError(millis()), jobDone(false), mState(IDLE), mChecksum(0), mTextPointer(0), sensor(sensor) {  
 
   #if defined(ESP32)
     Serial2.begin(19200, SERIAL_8N1, VE_RX, VE_TX);
@@ -83,7 +83,7 @@ void CVEDirectManager::loop() {
       }
     }
 
-    if (checkForMessage() != NULL) {
+    if (pollMessage() != NULL) {
       // S'all good
       tMillisError = millis();
     } else if (millis() - tMillisError > 10000) {
@@ -99,16 +99,17 @@ void CVEDirectManager::loop() {
         sensor->getBaroPressure(NULL),
         VEDirectCommFail
       };
-      msg = new CRF24Message(0, _msg);
+      addMessage(new CRF24Message(0, _msg));
     }
   }
 }
 
 void CVEDirectManager::powerDown() {
   jobDone = true;
-  if (msg != NULL) {
+  while(!messages.empty()) {
+    CBaseMessage *msg = messages.front();
+    messages.pop();
     delete msg;
-    msg = NULL;
   }
   mVEData.clear();
 }
@@ -116,10 +117,6 @@ void CVEDirectManager::powerDown() {
 void CVEDirectManager::powerUp() {
   jobDone = false;
   tMillis = 0;
-  if (msg != NULL) {
-    delete msg;
-    msg = NULL;
-  }
   tMillisError = millis();
   mVEData.clear();
 }
@@ -219,11 +216,6 @@ bool CVEDirectManager::hexRxEvent(uint8_t inbyte) {
 }
 
 void CVEDirectManager::frameEndEvent(bool valid) {
-  if (msg != NULL) {
-    delete msg;
-    msg = NULL;
-  }
-
   if (!valid) {
     return;
   }
@@ -264,7 +256,7 @@ void CVEDirectManager::frameEndEvent(bool valid) {
       //
       temp
     };
-    msg = new CRF24Message_VED_MPPT(0, _msg);
+    addMessage(new CRF24Message_VED_MPPT(0, _msg));
   } else if (PIDS_INV.find(pidInt) != PIDS_INV.end()) {
     Log.traceln("PID is AC inverter");
     const r24_message_ved_inv_t _msg {
@@ -283,7 +275,7 @@ void CVEDirectManager::frameEndEvent(bool valid) {
       //
       temp
     };
-    msg = new CRF24Message_VED_INV(0, _msg);
+    addMessage(new CRF24Message_VED_INV(0, _msg));
   } else if (PIDS_BATT.find(pidInt) != PIDS_INV.end()) {
     Log.traceln("PID is BATT monitor");
     const r24_message_ved_inv_t _msg {
@@ -302,8 +294,26 @@ void CVEDirectManager::frameEndEvent(bool valid) {
       //
       temp
     };
-    msg = new CRF24Message_VED_INV(0, _msg);
+    addMessage(new CRF24Message_VED_INV(0, _msg));
   } else {
     Log.warningln("Received frame with unsupported PID: %s", pid->second.c_str());
+  }
+}
+
+CBaseMessage* CVEDirectManager::pollMessage() { 
+  if (mState != IDLE || messages.size() == 0) {
+    return NULL;
+  }
+  CBaseMessage* msg = messages.front();
+  messages.pop();
+  return msg;
+}
+
+void CVEDirectManager::addMessage(CBaseMessage *msg) {
+  messages.push(msg);
+  if (messages.size() > MIN_TRANSMITTED_MESSAGES + 1) {
+    CBaseMessage* msg = messages.front();
+    messages.pop();
+    delete msg;
   }
 }

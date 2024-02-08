@@ -4,5 +4,5 @@
 
 class IVEDMessageProvider {
 public:
-  virtual CBaseMessage* checkForMessage();
+  virtual CBaseMessage* pollMessage();
 };

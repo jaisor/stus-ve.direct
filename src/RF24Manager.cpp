@@ -26,8 +26,7 @@
 #endif
 
 CRF24Manager::CRF24Manager(IVEDMessageProvider *vedProvider)
-:vedProvider(vedProvider) {  
-  jobDone = false;
+:vedProvider(vedProvider), jobDone(false), transmittedCount(0) {  
   radio = new RF24(CE_PIN, CSN_PIN);
   
   if (!radio->begin()) {
@@ -89,7 +88,7 @@ void CRF24Manager::loop() {
   }
 
   // Take measurement
-  CBaseMessage *msg = vedProvider->checkForMessage();
+  CBaseMessage *msg = vedProvider->pollMessage();
   if (msg != NULL) { 
     if (Log.getLevel() >= LOG_LEVEL_VERBOSE) {
       Log.verboseln(F("Msg: %s"), msg->getString().c_str());
@@ -97,7 +96,9 @@ void CRF24Manager::loop() {
     if (radio->write(msg->getMessageBuffer(), msg->getMessageLength(), true)) {
       tMillis = millis();
       Log.noticeln(F("Transmitted message (ID=%i) length %i: %s"), msg->getId(), msg->getMessageLength(), msg->getString().c_str());
-      jobDone = true;
+      if (++transmittedCount > MIN_TRANSMITTED_MESSAGES) {
+        jobDone = true;
+      }
     } else {
       if (++retries > MAX_RETRIES_BEFORE_DONE) {
         // Lost cause
@@ -111,6 +112,7 @@ void CRF24Manager::loop() {
         intLEDBlink(50);
       }
     }
+    delete msg;
   } else if (millis() - tMillis > 5000) {
     tMillis = millis();
     Log.warningln("No VE.Direct message for over 5sec");
@@ -128,5 +130,8 @@ void CRF24Manager::powerUp() {
   jobDone = false;
   tMillis = millis();
   retries = 0;
-  radio->powerUp();
+  transmittedCount = 0;
+  #ifdef RADIO_RF24
+    radio->powerUp();
+  #endif
 }

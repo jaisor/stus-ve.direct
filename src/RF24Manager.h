@@ -16,6 +16,7 @@ private:
 
   IVEDMessageProvider *vedProvider;
   bool jobDone;
+  uint8_t transmittedCount;
     
 public:
 	CRF24Manager(IVEDMessageProvider *vedProvider);

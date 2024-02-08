@@ -29,7 +29,7 @@ void setup() {
   #ifndef DISABLE_LOGGING
   Serial.begin(19200); while (!Serial); delay(100);
   Log.begin(LOG_LEVEL, &Serial);
-  Log.infoln("Initializing...");
+  Log.infoln(F("Initializing..."));
   #endif
 
   device = new CDevice();
@@ -38,7 +38,7 @@ void setup() {
   tsMillisBooted = millis();
 
   if (rf24Manager->isError() || vedManager->isError()) {
-    Log.errorln("rf24Manager->isError()=%i; vedManager->isError()=%i", rf24Manager->isError(), vedManager->isError());
+    Log.errorln(F("rf24Manager->isError()=%i; vedManager->isError()=%i"), rf24Manager->isError(), vedManager->isError());
     while(true) {
       intLEDBlink(250);
       delay(250);
@@ -46,7 +46,7 @@ void setup() {
   }
 
   delay(300);
-  Log.infoln("Initialized");
+  Log.infoln(F("Initialized"));
   digitalWrite(LED_SETUP, HIGH);
   delay(100);
   digitalWrite(LED_SETUP, LOW);
@@ -92,7 +92,7 @@ void loop() {
     intLEDOff();
     rf24Manager->powerDown();
     vedManager->powerDown();
-    Log.infoln("Deep sleep disabled, chilling for 2 sec");
+    Log.infoln(F("Deep sleep disabled, chilling for 2 sec"));
     delay(2000);
     rf24Manager->powerUp();
     vedManager->powerUp();
