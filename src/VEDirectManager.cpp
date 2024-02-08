@@ -22,10 +22,12 @@
   #error Unsupported platform
 #endif
 
+#include <RF24Message_VED_MPPT.h>
+#include <RF24Message_VED_INV.h>
+#include <RF24Message_VED_BATT.h>
+#include <RF24Message_VED_BATT_SUP.h>
+#include <RF24Message.h>
 #include "VEDirectManager.h"
-#include "RF24Message_VED_MPPT.h"
-#include "RF24Message_VED_INV.h"
-#include "RF24Message.h"
 
 static constexpr char checksumTagName[] = "CHECKSUM";
 
@@ -257,6 +259,7 @@ void CVEDirectManager::frameEndEvent(bool valid) {
       temp
     };
     addMessage(new CRF24Message_VED_MPPT(0, _msg));
+    mVEData.clear();
   } else if (PIDS_INV.find(pidInt) != PIDS_INV.end()) {
     Log.traceln("PID is AC inverter");
     const r24_message_ved_inv_t _msg {
@@ -276,27 +279,47 @@ void CVEDirectManager::frameEndEvent(bool valid) {
       temp
     };
     addMessage(new CRF24Message_VED_INV(0, _msg));
+    mVEData.clear();
   } else if (PIDS_BATT.find(pidInt) != PIDS_INV.end()) {
     Log.traceln("PID is BATT monitor");
-    const r24_message_ved_inv_t _msg {
-      MSG_VED_INV_ID,
-      //
-      static_cast<float>(atoi(mVEData[String("V")].c_str()) / 1000.0),
-      static_cast<float>(atoi(mVEData[String("AC_OUT_I")].c_str()) / 10.0),
-      static_cast<float>(atoi(mVEData[String("AC_OUT_V")].c_str()) / 100.0),
-      static_cast<float>(atoi(mVEData[String("AC_OUT_S")].c_str())),
-      //
-      static_cast<uint8_t>(atoi(mVEData[String("CS")].c_str())),
-      static_cast<int8_t>(atoi(mVEData[String("MODE")].c_str())),
-      static_cast<uint8_t>(strtol(mVEData[String("OR")].c_str(), NULL, 16)),
-      static_cast<uint8_t>(atoi(mVEData[String("AR")].c_str())),
-      static_cast<uint8_t>(atoi(mVEData[String("WARN")].c_str())),
-      //
-      temp
-    };
-    addMessage(new CRF24Message_VED_INV(0, _msg));
+    if ( mVEData.find(String("PID")) == mVEData.end()) {
+      Log.traceln("Supplemental message");
+      const r24_message_ved_batt_sup_t _msg {
+        MSG_VED_BATT_SUP_ID,
+        //
+        static_cast<float>(atoi(mVEData[String("H2")].c_str()) / 1000.0),
+        static_cast<uint16_t>(atoi(mVEData[String("H4")].c_str())),
+        //
+        static_cast<float>(atoi(mVEData[String("H7")].c_str()) / 1000.0),
+        static_cast<float>(atoi(mVEData[String("H15")].c_str()) / 1000.0),
+        //
+        static_cast<float>(atoi(mVEData[String("H18")].c_str()) * 10.0),
+        static_cast<float>(atoi(mVEData[String("H17")].c_str()) * 10.0),
+        //
+        temp
+      };
+      addMessage(new CRF24Message_VED_BATT_SUP(0, _msg));
+      mVEData.clear();
+    } else {
+      const r24_message_ved_batt_t _msg {
+        MSG_VED_BATT_ID,
+        //
+        static_cast<float>(atoi(mVEData[String("V")].c_str()) / 1000.0),
+        static_cast<float>(atoi(mVEData[String("VS")].c_str()) / 1000.0),
+        static_cast<float>(atoi(mVEData[String("I")].c_str()) / 1000.0),
+        static_cast<int16_t>(atoi(mVEData[String("P")].c_str())),
+        //
+        static_cast<float>(atoi(mVEData[String("CE")].c_str()) / 1000.0),
+        static_cast<uint16_t>(atoi(mVEData[String("SOC")].c_str())),
+        static_cast<uint16_t>(atoi(mVEData[String("TTG")].c_str())),
+        //
+        static_cast<uint8_t>(atoi(mVEData[String("Alarm")].c_str())),
+      };
+      addMessage(new CRF24Message_VED_BATT(0, _msg));
+    }
   } else {
     Log.warningln("Received frame with unsupported PID: %s", pid->second.c_str());
+    mVEData.clear();
   }
 }
 
