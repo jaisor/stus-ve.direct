@@ -104,6 +104,7 @@ void CDevice::loop() {
         ds18b20->requestTemperatures();
         tLastReading = millis();
         Log.traceln(F("DS18B20 temp: %FC %FF"), _temperature, _temperature*1.8+32);
+        tMillisTemp = millis();
       } else {
         //Log.infoln(F("DS18B20 conversion not complete"));
       }

@@ -4,9 +4,9 @@
 #include <functional>
 #include <ArduinoLog.h>
 
-//#define DISABLE_LOGGING
+#define DISABLE_LOGGING
 #ifndef DISABLE_LOGGING
-  #define LOG_LEVEL LOG_LEVEL_INFO
+  #define LOG_LEVEL LOG_LEVEL_NOTICE
 #endif
 
 #if defined(ESP32)
@@ -21,12 +21,12 @@
 
 #define RADIO_RF24
 #ifdef RADIO_RF24
-  #define MIN_TRANSMITTED_MESSAGES  6 // Number of messages to transmit before declaring job done
+  #define MSGS_TO_TRANSMIT_BEFORE_DONE  4 // Number of messages to transmit before declaring job done
   #define RF24_CHANNEL 76
   #define RF24_DATA_RATE RF24_250KBPS
   #define RF24_PA_LEVEL RF24_PA_HIGH
   #define RF24_ADDRESS "3STUS" // MPPT charger
-  // #define RF24_ADDRESS "4STUS" // Phoenix inverter
+  //#define RF24_ADDRESS "4STUS" // Battery monitor
 #endif
 
 //#define BATTERY_SENSOR  // ADC A0 using 0-3.3v voltage divider
@@ -64,7 +64,7 @@
   #define TEMP_SENSOR_PIN D4
 #endif
 
-#define DEEP_SLEEP_INTERVAL_SEC 0 // 300 // 5 min default, 0 - disabled
+#define DEEP_SLEEP_INTERVAL_SEC 300 // 5 min default, 0 - disabled
 #define DEEP_SLEEP_MIN_AWAKE_MS 500 // Minimum time to remain awake after smooth boot before sleeping again
 #define BATTERY_VOLTS_DIVIDER 217.55
 

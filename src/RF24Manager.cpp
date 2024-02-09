@@ -26,7 +26,7 @@
 #endif
 
 CRF24Manager::CRF24Manager(IVEDMessageProvider *vedProvider)
-:vedProvider(vedProvider), jobDone(false), transmittedCount(0) {  
+:vedProvider(vedProvider), jobDone(false), transmittedCount(0), tsLastTransmit(0) {  
   radio = new RF24(CE_PIN, CSN_PIN);
   
   if (!radio->begin()) {
@@ -87,6 +87,11 @@ void CRF24Manager::loop() {
     return;
   }
 
+  if (millis() - tsLastTransmit < 100) {
+    // Allow slower 8266s to catch up
+    return;
+  }
+
   // Take measurement
   CBaseMessage *msg = vedProvider->pollMessage();
   if (msg != NULL) { 
@@ -95,8 +100,9 @@ void CRF24Manager::loop() {
     }
     if (radio->write(msg->getMessageBuffer(), msg->getMessageLength(), true)) {
       tMillis = millis();
-      Log.noticeln(F("Transmitted message (ID=%i) length %i: %s"), msg->getId(), msg->getMessageLength(), msg->getString().c_str());
-      if (++transmittedCount > MIN_TRANSMITTED_MESSAGES) {
+      tsLastTransmit = millis();
+      Log.noticeln(F("Transmitted message %i/%i: %s"), transmittedCount, MSGS_TO_TRANSMIT_BEFORE_DONE, msg->getString().c_str());
+      if (++transmittedCount > MSGS_TO_TRANSMIT_BEFORE_DONE) {
         jobDone = true;
       }
     } else {

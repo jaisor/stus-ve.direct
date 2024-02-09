@@ -34,10 +34,13 @@ private:
 
   std::queue<CBaseMessage*> messages;
   ISensorProvider* sensor;
+
+  uint16_t lastPid;
+  uint16_t randomDelay;
   
   void rxData(uint8_t inbyte);
   bool hexRxEvent(uint8_t inbyte);
-  void frameEndEvent(bool valid);
+  void frameEndEvent();
   void addMessage(CBaseMessage *msg);
   
 public:

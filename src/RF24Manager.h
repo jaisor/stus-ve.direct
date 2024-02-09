@@ -8,7 +8,7 @@
 class CRF24Manager: public CBaseManager {
 
 private:
-  unsigned long tMillis;
+  unsigned long tMillis, tsLastTransmit;
   uint8_t retries;
   bool error;
 

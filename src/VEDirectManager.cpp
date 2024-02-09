@@ -34,11 +34,12 @@ static constexpr char checksumTagName[] = "CHECKSUM";
 const std::set<uint16_t> PIDS_MPPT = {0XA057, 0XA055}; //
 const std::set<uint16_t> PIDS_INV = {0xA2FA}; //
 const std::set<uint16_t> PIDS_BATT = {0XA389}; //
+const std::set<uint16_t> PIDS_WITH_SUPPLEMENTALS = {0XA389}; //
 
 // Protocol https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.33.pdf
 
 CVEDirectManager::CVEDirectManager(ISensorProvider* sensor)
-:tMillis(0), tMillisError(millis()), jobDone(false), mState(IDLE), mChecksum(0), mTextPointer(0), sensor(sensor) {  
+:tMillis(0), tMillisError(millis()), jobDone(false), mState(IDLE), mChecksum(0), mTextPointer(0), sensor(sensor), lastPid(0), randomDelay(0) {  
 
   #if defined(ESP32)
     Serial2.begin(19200, SERIAL_8N1, VE_RX, VE_TX);
@@ -68,8 +69,7 @@ void CVEDirectManager::loop() {
   }
   
   if (millis() - tMillis > 1000) {
-    tMillis = millis();  
-
+    
     char rc;
     while (VEDirectStream->available() > 0) {
       rc = VEDirectStream->read();
@@ -84,8 +84,8 @@ void CVEDirectManager::loop() {
         ++it;
       }
     }
-
-    if (pollMessage() != NULL) {
+    
+    if (messages.size() != 0) {
       // S'all good
       tMillisError = millis();
     } else if (millis() - tMillisError > 10000) {
@@ -124,7 +124,7 @@ void CVEDirectManager::powerUp() {
 }
 
 void CVEDirectManager::rxData(uint8_t inbyte) {
-  
+
   if ( (inbyte == ':') && (mState != CHECKSUM) ) {
     mState = RECORD_HEX;
   }
@@ -180,6 +180,9 @@ void CVEDirectManager::rxData(uint8_t inbyte) {
         if ( mTextPointer < (mValue + sizeof(mValue)) ) {
           *mTextPointer = 0; // make zero ended
           mVEData[String(mName)] = String(mValue);
+          if (Log.getLevel() >= LOG_LEVEL_VERBOSE) {
+            //Log.verboseln("~~ [%s] = '%s'", mName, mValue);
+          }
         }
         mState = RECORD_BEGIN;
         break;
@@ -192,15 +195,18 @@ void CVEDirectManager::rxData(uint8_t inbyte) {
         break;
       }
       break;
-    case CHECKSUM:
-    {
+    case CHECKSUM: {
+      Log.traceln("mVEData size=%i, checksum=%i", mVEData.size(), mChecksum);
       if (mChecksum != 0) {
         Log.traceln("Ignoring frame with invalid checksum %x", mChecksum);
-        mVEData.clear();
+      } else if (mVEData.size() == 0) {
+        Log.traceln(F("Ignoring empty frame"));
+      } else {
+        frameEndEvent();
       }
       mChecksum = 0;
       mState = IDLE;
-      frameEndEvent(mChecksum == 0);
+      mVEData.clear();
       break;
     }
     case RECORD_HEX:
@@ -217,90 +223,79 @@ bool CVEDirectManager::hexRxEvent(uint8_t inbyte) {
   return true;
 }
 
-void CVEDirectManager::frameEndEvent(bool valid) {
-  if (!valid) {
-    return;
-  }
+void CVEDirectManager::frameEndEvent() {
 
   std::map<String, String>::const_iterator pid = mVEData.find(String("PID"));
-  if (pid == mVEData.end()) {
-    Log.warningln("Ignoring frame without a PID");
+  if (pid == mVEData.end() 
+      && (lastPid == 0 || PIDS_WITH_SUPPLEMENTALS.find(lastPid) == PIDS_WITH_SUPPLEMENTALS.end())) {
+
+    Log.warningln("Ignoring frame without a PID (lastPid=%x)", lastPid);
+    if (Log.getLevel() >= LOG_LEVEL_NOTICE) {
+      std::map<String, String>::iterator it = mVEData.begin();
+      while (it != mVEData.end()) {
+        Log.noticeln(F("  [%s]='%s'"),it->first.c_str(), it->second.c_str());
+        ++it;
+      }
+    }
     return;
   }
 
   bool tempCurrent = false;
   float temp = sensor->getTemperature(&tempCurrent);
   if (!sensor->isSensorReady() || !tempCurrent) {
-    Log.verboseln("Skipping frame while temperature sensor not ready or stale");
+    Log.verboseln(F("Skipping frame while temperature sensor not ready or stale"));
     return;
   }
 
-  uint16_t pidInt = std::stoul(pid->second.c_str(), nullptr, 16);
   tMillisError = millis();
-  Log.traceln("Preparing event for PID '%s'(%x) with %i values and sensor temp %DC", pid->second.c_str(), pidInt, mVEData.size(), temp);
-  if (PIDS_MPPT.find(pidInt) != PIDS_MPPT.end()) {
-    Log.traceln("PID is MPPT charger");
-    const r24_message_ved_mppt_t _msg {
-      MSG_VED_MPPT_ID,
-      //
-      static_cast<float>(atoi(mVEData[String("V")].c_str()) / 1000.0),
-      static_cast<float>(atoi(mVEData[String("I")].c_str()) / 1000.0),
-      static_cast<float>(atoi(mVEData[String("VPV")].c_str()) / 1000.0),
-      static_cast<float>(atoi(mVEData[String("PPV")].c_str())),
-      //
-      static_cast<uint8_t>(atoi(mVEData[String("CS")].c_str())),
-      static_cast<uint8_t>(atoi(mVEData[String("MPPT")].c_str())),
-      static_cast<uint8_t>(strtol(mVEData[String("OR")].c_str(), NULL, 16)),
-      static_cast<uint8_t>(atoi(mVEData[String("ERR")].c_str())),
-      //
-      static_cast<uint16_t>(atoi(mVEData[String("H20")].c_str()) * 10),
-      static_cast<uint16_t>(atoi(mVEData[String("H21")].c_str())),
-      //
-      temp
-    };
-    addMessage(new CRF24Message_VED_MPPT(0, _msg));
-    mVEData.clear();
-  } else if (PIDS_INV.find(pidInt) != PIDS_INV.end()) {
-    Log.traceln("PID is AC inverter");
-    const r24_message_ved_inv_t _msg {
-      MSG_VED_INV_ID,
-      //
-      static_cast<float>(atoi(mVEData[String("V")].c_str()) / 1000.0),
-      static_cast<float>(atoi(mVEData[String("AC_OUT_I")].c_str()) / 10.0),
-      static_cast<float>(atoi(mVEData[String("AC_OUT_V")].c_str()) / 100.0),
-      static_cast<float>(atoi(mVEData[String("AC_OUT_S")].c_str())),
-      //
-      static_cast<uint8_t>(atoi(mVEData[String("CS")].c_str())),
-      static_cast<int8_t>(atoi(mVEData[String("MODE")].c_str())),
-      static_cast<uint8_t>(strtol(mVEData[String("OR")].c_str(), NULL, 16)),
-      static_cast<uint8_t>(atoi(mVEData[String("AR")].c_str())),
-      static_cast<uint8_t>(atoi(mVEData[String("WARN")].c_str())),
-      //
-      temp
-    };
-    addMessage(new CRF24Message_VED_INV(0, _msg));
-    mVEData.clear();
-  } else if (PIDS_BATT.find(pidInt) != PIDS_INV.end()) {
-    Log.traceln("PID is BATT monitor");
-    if ( mVEData.find(String("PID")) == mVEData.end()) {
-      Log.traceln("Supplemental message");
-      const r24_message_ved_batt_sup_t _msg {
-        MSG_VED_BATT_SUP_ID,
+  uint16_t pidInt = 0;
+  if (pid != mVEData.end()) {
+    pidInt = std::stoul(pid->second.c_str(), nullptr, 16);
+    lastPid = pidInt;
+
+    Log.traceln(F("Preparing event for PID '%s'(%x) with %i values and sensor temp %DC"), pid->second.c_str(), pidInt, mVEData.size(), temp);
+    if (PIDS_MPPT.find(pidInt) != PIDS_MPPT.end()) {
+      Log.traceln(F("PID is MPPT charger"));
+      const r24_message_ved_mppt_t _msg {
+        MSG_VED_MPPT_ID,
         //
-        static_cast<float>(atoi(mVEData[String("H2")].c_str()) / 1000.0),
-        static_cast<uint16_t>(atoi(mVEData[String("H4")].c_str())),
+        static_cast<float>(atoi(mVEData[String("V")].c_str()) / 1000.0),
+        static_cast<float>(atoi(mVEData[String("I")].c_str()) / 1000.0),
+        static_cast<float>(atoi(mVEData[String("VPV")].c_str()) / 1000.0),
+        static_cast<float>(atoi(mVEData[String("PPV")].c_str())),
         //
-        static_cast<float>(atoi(mVEData[String("H7")].c_str()) / 1000.0),
-        static_cast<float>(atoi(mVEData[String("H15")].c_str()) / 1000.0),
+        static_cast<uint8_t>(atoi(mVEData[String("CS")].c_str())),
+        static_cast<uint8_t>(atoi(mVEData[String("MPPT")].c_str())),
+        static_cast<uint8_t>(strtol(mVEData[String("OR")].c_str(), NULL, 16)),
+        static_cast<uint8_t>(atoi(mVEData[String("ERR")].c_str())),
         //
-        static_cast<float>(atoi(mVEData[String("H18")].c_str()) * 10.0),
-        static_cast<float>(atoi(mVEData[String("H17")].c_str()) * 10.0),
+        static_cast<uint16_t>(atoi(mVEData[String("H20")].c_str()) * 10),
+        static_cast<uint16_t>(atoi(mVEData[String("H21")].c_str())),
         //
         temp
       };
-      addMessage(new CRF24Message_VED_BATT_SUP(0, _msg));
-      mVEData.clear();
-    } else {
+      addMessage(new CRF24Message_VED_MPPT(0, _msg));
+    } else if (PIDS_INV.find(pidInt) != PIDS_INV.end()) {
+      Log.traceln("PID is AC inverter");
+      const r24_message_ved_inv_t _msg {
+        MSG_VED_INV_ID,
+        //
+        static_cast<float>(atoi(mVEData[String("V")].c_str()) / 1000.0),
+        static_cast<float>(atoi(mVEData[String("AC_OUT_I")].c_str()) / 10.0),
+        static_cast<float>(atoi(mVEData[String("AC_OUT_V")].c_str()) / 100.0),
+        static_cast<float>(atoi(mVEData[String("AC_OUT_S")].c_str())),
+        //
+        static_cast<uint8_t>(atoi(mVEData[String("CS")].c_str())),
+        static_cast<int8_t>(atoi(mVEData[String("MODE")].c_str())),
+        static_cast<uint8_t>(strtol(mVEData[String("OR")].c_str(), NULL, 16)),
+        static_cast<uint8_t>(atoi(mVEData[String("AR")].c_str())),
+        static_cast<uint8_t>(atoi(mVEData[String("WARN")].c_str())),
+        //
+        temp
+      };
+      addMessage(new CRF24Message_VED_INV(0, _msg));
+    } else if (PIDS_BATT.find(pidInt) != PIDS_BATT.end()) {
+      Log.traceln("PID is BATT monitor");
       const r24_message_ved_batt_t _msg {
         MSG_VED_BATT_ID,
         //
@@ -313,18 +308,34 @@ void CVEDirectManager::frameEndEvent(bool valid) {
         static_cast<uint16_t>(atoi(mVEData[String("SOC")].c_str())),
         static_cast<uint16_t>(atoi(mVEData[String("TTG")].c_str())),
         //
-        static_cast<uint8_t>(atoi(mVEData[String("Alarm")].c_str())),
+        static_cast<uint8_t>(atoi(mVEData[String("AR")].c_str())),
       };
       addMessage(new CRF24Message_VED_BATT(0, _msg));
+    } else if (pid != mVEData.end()) {
+      Log.warningln("Received frame with unsupported PID: %s", pid->second.c_str());
     }
-  } else {
-    Log.warningln("Received frame with unsupported PID: %s", pid->second.c_str());
-    mVEData.clear();
+  } else if (lastPid && PIDS_WITH_SUPPLEMENTALS.find(lastPid) != PIDS_WITH_SUPPLEMENTALS.end()) {
+    Log.noticeln(F("Preparing supplemental event for PID %x with %i values and sensor temp %DC"), lastPid, mVEData.size(), temp);
+    const r24_message_ved_batt_sup_t _msg {
+      MSG_VED_BATT_SUP_ID, // TODO: Support other devices that might have supplemental messages
+      //
+      static_cast<float>(atoi(mVEData[String("H2")].c_str()) / 1000.0),
+      static_cast<uint16_t>(atoi(mVEData[String("H4")].c_str())),
+      //
+      static_cast<float>(atoi(mVEData[String("H7")].c_str()) / 1000.0),
+      static_cast<float>(atoi(mVEData[String("H15")].c_str()) / 1000.0),
+      //
+      static_cast<float>(atoi(mVEData[String("H18")].c_str()) * 10.0),
+      static_cast<float>(atoi(mVEData[String("H17")].c_str()) * 10.0),
+      //
+      temp
+    };
+    addMessage(new CRF24Message_VED_BATT_SUP(0, _msg));
   }
 }
 
 CBaseMessage* CVEDirectManager::pollMessage() { 
-  if (mState != IDLE || messages.size() == 0) {
+  if (messages.size() == 0) {
     return NULL;
   }
   CBaseMessage* msg = messages.front();
@@ -333,10 +344,13 @@ CBaseMessage* CVEDirectManager::pollMessage() {
 }
 
 void CVEDirectManager::addMessage(CBaseMessage *msg) {
-  messages.push(msg);
-  if (messages.size() > MIN_TRANSMITTED_MESSAGES + 1) {
+  if (messages.size() > MSGS_TO_TRANSMIT_BEFORE_DONE + 1 && messages.front()->getId() == msg->getId()) {
+    Log.noticeln("Deleting excess message with ID %x", msg->getId());
     CBaseMessage* msg = messages.front();
     messages.pop();
     delete msg;
   }
+  Log.noticeln("Adding message with ID %i to queue of size: %i", msg->getId(), messages.size());
+  messages.push(msg);
+  
 }

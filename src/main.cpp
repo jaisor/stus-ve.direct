@@ -92,8 +92,8 @@ void loop() {
     intLEDOff();
     rf24Manager->powerDown();
     vedManager->powerDown();
-    Log.infoln(F("Deep sleep disabled, chilling for 2 sec"));
-    delay(2000);
+    Log.infoln(F("Deep sleep disabled, chilling for 5 sec"));
+    delay(5000);
     rf24Manager->powerUp();
     vedManager->powerUp();
     tsMillisBooted = millis();
